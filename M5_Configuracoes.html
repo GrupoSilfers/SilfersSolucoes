@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M5 — Configurações</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ===== TOP BAR (padrão M3) ===== */
+    .m5-top-bar {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: #f8fafc;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+      z-index: 10001;
+      position: sticky;
+      top: 0;
+    }
+    .m5-top-bar h1 {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .m5-btn-exit {
+      background: none;
+      border: 1.5px solid #94a3b8;
+      color: #94a3b8;
+      border-radius: 0;
+      padding: 5px 14px;
+      font-size: 10px;
+      font-weight: 400;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .m5-btn-exit:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: rgba(239,68,68,.08);
+    }
+
+    /* ===== CONTAINER ===== */
+    .container {
+      max-width: 640px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    /* ===== SEÇÃO ===== */
+    .section {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      padding: 28px 28px 24px;
+      margin-bottom: 20px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .section-header svg { width: 20px; height: 20px; fill: #4f46e5; flex-shrink: 0; }
+    .section-header span {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.3px;
+    }
+
+    /* ===== LOGO PREVIEW ===== */
+    .logo-preview-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .logo-frame {
+      width: 200px;
+      height: 200px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    .logo-frame:hover { border-color: #4f46e5; }
+    .logo-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .logo-frame .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: #94a3b8;
+    }
+    .logo-frame .placeholder svg { width: 48px; height: 48px; fill: #cbd5e1; }
+    .logo-frame .placeholder span { font-size: 12px; font-weight: 500; }
+    .logo-info {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .logo-info strong { color: #1e293b; font-weight: 600; }
+
+    /* ===== DROP ZONE ===== */
+    .drop-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #f8fafc;
+      margin-bottom: 20px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #4f46e5;
+      background: #eef2ff;
+    }
+    .drop-zone svg { width: 36px; height: 36px; fill: #94a3b8; margin-bottom: 8px; }
+    .drop-zone.dragover svg { fill: #4f46e5; }
+    .drop-zone p {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .drop-zone p strong { color: #4f46e5; font-weight: 600; }
+    .drop-zone .hint {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    /* ===== BOTÕES ===== */
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+    }
+    .btn-primary:hover { box-shadow: 0 4px 16px rgba(79,70,229,0.35); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-warning {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.25);
+    }
+    .btn-warning:hover { box-shadow: 0 4px 16px rgba(245,158,11,0.35); transform: translateY(-1px); }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #f87171);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(239,68,68,0.25);
+    }
+    .btn-danger:hover { box-shadow: 0 4px 16px rgba(239,68,68,0.35); transform: translateY(-1px); }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      animation: toastIn 0.4s ease;
+      max-width: 340px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.success { background: linear-gradient(135deg, #10b981, #34d399); }
+    .toast.error { background: linear-gradient(135deg, #ef4444, #f87171); }
+    .toast.info { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+    .toast svg { width: 16px; height: 16px; fill: #fff; flex-shrink: 0; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ===== LOADING ===== */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.7);
+      z-index: 9998;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== STATUS BADGE ===== */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .status-badge.saved {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .status-badge.empty {
+      background: #fef3c7;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .status-badge svg { width: 12px; height: 12px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      .container { padding: 0 10px; margin: 16px auto; }
+      .section { padding: 18px 14px 16px; }
+      .logo-frame { width: 160px; height: 160px; }
+      .m5-top-bar { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR (padrão M3) -->
+  <div class="m5-top-bar">
+    <h1><i class="fas fa-cog" style="font-size:13px;margin-right:8px;opacity:.7;"></i> Configurações</h1>
+    <button class="m5-btn-exit" onclick="sairDoModulo()">&#10005; Sair</button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- CONTEÚDO -->
+  <div class="container">
+
+    <!-- SEÇÃO: LOGO DA EMPRESA -->
+    <div class="section">
+      <div class="section-header">
+        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        <span>LOGO DA EMPRESA</span>
+      </div>
+
+      <!-- Status -->
+      <div style="text-align:center; margin-bottom: 18px;">
+        <span class="status-badge empty" id="logoBadge">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span id="logoBadgeText">Nenhum logo salvo</span>
+        </span>
+      </div>
+
+      <!-- Preview -->
+      <div class="logo-preview-area">
+        <div class="logo-frame" id="logoFrame">
+          <div class="placeholder" id="logoPlaceholder">
+            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+            <span>Nenhum logo</span>
+          </div>
+          <img id="logoImg" src="" alt="Logo da empresa" style="display:none;">
+        </div>
+        <div class="logo-info" id="logoInfo" style="display:none;">
+          <strong id="logoNome"></strong><br>
+          <span id="logoTamanho"></span> · <span id="logoDimensoes"></span><br>
+          <span id="logoDataUpload" style="color:#94a3b8;"></span>
+        </div>
+      </div>
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <p>Arraste uma imagem aqui ou <strong>clique para selecionar</strong></p>
+        <span class="hint">PNG, JPG ou SVG · Máximo 500 KB</span>
+      </div>
+      <input type="file" id="fileInput" accept="image/png,image/jpeg,image/svg+xml" style="display:none;" onchange="handleFileSelect(event)">
+
+      <!-- Botões -->
+      <div class="btn-group" id="btnGroup">
+        <button class="btn btn-primary" id="btnEnviar" onclick="enviarLogo()" disabled>
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+          Enviar Logo
+        </button>
+        <button class="btn btn-warning" id="btnAlterar" onclick="alterarLogo()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          Alterar Logo
+        </button>
+        <button class="btn btn-danger" id="btnExcluir" onclick="excluirLogo()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          Excluir Logo
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FIREBASE SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+            apiKey: "AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",
+            authDomain: "silferssolucoes.firebaseapp.com",
+            projectId: "silferssolucoes",
+            storageBucket: "silferssolucoes.firebasestorage.app",
+            messagingSenderId: "923480581130",
+            appId: "1:923480581130:web:9c3e4d8ccab43354c16bf3"
+        };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Expor para funções globais
+    window.db = db;
+    window.fbDoc = doc;
+    window.fbGetDoc = getDoc;
+    window.fbSetDoc = setDoc;
+    window.fbDeleteDoc = deleteDoc;
+
+    // Carregar logo ao iniciar
+    window.addEventListener('DOMContentLoaded', carregarLogo);
+
+    async function carregarLogo() {
+      showLoading(true);
+      try {
+        const ref = doc(db, 'configuracoes', 'logo');
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          exibirLogo(data);
+          showToast('Logo carregado com sucesso!', 'success');
+        } else {
+          estadoSemLogo();
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao carregar logo: ' + e.message, 'error');
+        estadoSemLogo();
+      }
+      showLoading(false);
+    }
+    window.carregarLogo = carregarLogo;
+  </script>
+
+  <script>
+    // ===== VARIÁVEIS GLOBAIS =====
+    let arquivoSelecionado = null;
+    let logoAtualExiste = false;
+
+    // ===== TOAST =====
+    function showToast(msg, type) {
+      const container = document.getElementById('toastContainer');
+      const icons = {
+        success: '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>',
+        error: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+        info: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>'
+      };
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.innerHTML = (icons[type] || icons.info) + ' ' + msg;
+      container.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400); }, 3500);
+    }
+    window.showToast = showToast;
+
+    // ===== LOADING =====
+    function showLoading(v) {
+      document.getElementById('loadingOverlay').classList.toggle('active', v);
+    }
+    window.showLoading = showLoading;
+
+    // ===== SAIR (padrão M3) =====
+    function sairDoModulo() {
+            try {
+                var p = window.parent;
+                if (p && p !== window && p.document) {
+                    p.document.querySelectorAll('.nav-group.open').forEach(function(g) { g.classList.remove('open'); });
+                    p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(function(a) { a.classList.remove('active'); });
+                    var frame = p.document.getElementById('content-frame');
+                    if (frame) frame.src = 'M00_Dashboard.html';
+                    var title = p.document.getElementById('page-title');
+                    if (title) title.innerText = 'Dashboard';
+                    var navLinks = p.document.querySelectorAll('nav a[onclick]');
+                    for (var i = 0; i < navLinks.length; i++) {
+                        var oc = navLinks[i].getAttribute('onclick') || '';
+                        if (oc.indexOf('Dashboard') !== -1) {
+                            navLinks[i].classList.add('active'); break;
+                        }
+                    }
+                    return;
+                }
+            } catch(e) {}
+            window.location.href = 'M00_Dashboard.html';
+        }
+
+    // ===== DRAG & DROP =====
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        processarArquivo(files[0]);
+      }
+    });
+
+    // ===== SELEÇÃO DE ARQUIVO =====
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) processarArquivo(file);
+    }
+
+    function processarArquivo(file) {
+      // Validar tipo
+      const tiposValidos = ['image/png', 'image/jpeg', 'image/svg+xml'];
+      if (!tiposValidos.includes(file.type)) {
+        showToast('Formato inválido. Use PNG, JPG ou SVG.', 'error');
+        return;
+      }
+      // Validar tamanho (500 KB)
+      if (file.size > 500 * 1024) {
+        showToast('Arquivo muito grande. Máximo: 500 KB.', 'error');
+        return;
+      }
+
+      arquivoSelecionado = file;
+
+      // Preview local
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.getElementById('logoImg');
+        const placeholder = document.getElementById('logoPlaceholder');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+
+        // Obter dimensões
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          document.getElementById('logoDimensoes').textContent = tempImg.width + ' × ' + tempImg.height + ' px';
+        };
+        tempImg.src = e.target.result;
+
+        document.getElementById('logoNome').textContent = file.name;
+        document.getElementById('logoTamanho').textContent = formatarTamanho(file.size);
+        document.getElementById('logoDataUpload').textContent = '';
+        document.getElementById('logoInfo').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+
+      // Habilitar botão enviar
+      document.getElementById('btnEnviar').disabled = false;
+      document.getElementById('btnEnviar').style.display = 'inline-flex';
+      showToast('Arquivo selecionado: ' + file.name, 'info');
+    }
+
+    // ===== ENVIAR LOGO =====
+    async function enviarLogo() {
+      if (!arquivoSelecionado) {
+        showToast('Selecione um arquivo primeiro.', 'error');
+        return;
+      }
+      showLoading(true);
+      try {
+        const base64 = await fileToBase64(arquivoSelecionado);
+        const dados = {
+          base64: base64,
+          nome: arquivoSelecionado.name,
+          tamanho: arquivoSelecionado.size,
+          tipo: arquivoSelecionado.type,
+          dataUpload: new Date().toISOString()
+        };
+        const ref = window.fbDoc(window.db, 'configuracoes', 'logo');
+        await window.fbSetDoc(ref, dados);
+        showToast('Logo salvo com sucesso!', 'success');
+        exibirLogo(dados);
+        arquivoSelecionado = null;
+        document.getElementById('fileInput').value = '';
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao salvar logo: ' + e.message, 'error');
+      }
+      showLoading(false);
+    }
+
+    // ===== ALTERAR LOGO =====
+    function alterarLogo() {
+      document.getElementById('fileInput').click();
+    }
+
+    // ===== EXCLUIR LOGO =====
+    async function excluirLogo() {
+      if (!confirm('Tem certeza que deseja excluir o logo?')) return;
+      showLoading(true);
+      try {
+        const ref = window.fbDoc(window.db, 'configuracoes', 'logo');
+        await window.fbDeleteDoc(ref);
+        showToast('Logo excluído com sucesso!', 'success');
+        estadoSemLogo();
+        arquivoSelecionado = null;
+        document.getElementById('fileInput').value = '';
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao excluir logo: ' + e.message, 'error');
+      }
+      showLoading(false);
+    }
+
+    // ===== EXIBIR LOGO (dados do Firebase) =====
+    function exibirLogo(data) {
+      logoAtualExiste = true;
+      const img = document.getElementById('logoImg');
+      const placeholder = document.getElementById('logoPlaceholder');
+      const info = document.getElementById('logoInfo');
+
+      img.src = data.base64;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+
+      document.getElementById('logoNome').textContent = data.nome || 'logo';
+      document.getElementById('logoTamanho').textContent = formatarTamanho(data.tamanho || 0);
+      if (data.dataUpload) {
+        const dt = new Date(data.dataUpload);
+        document.getElementById('logoDataUpload').textContent = 'Enviado em ' + dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+      }
+      info.style.display = 'block';
+
+      // Dimensões
+      const tempImg = new Image();
+      tempImg.onload = function() {
+        document.getElementById('logoDimensoes').textContent = tempImg.width + ' × ' + tempImg.height + ' px';
+      };
+      tempImg.src = data.base64;
+
+      // Botões: esconder enviar, mostrar alterar e excluir
+      document.getElementById('btnEnviar').style.display = 'none';
+      document.getElementById('btnEnviar').disabled = true;
+      document.getElementById('btnAlterar').style.display = 'inline-flex';
+      document.getElementById('btnExcluir').style.display = 'inline-flex';
+
+      // Badge
+      const badge = document.getElementById('logoBadge');
+      badge.className = 'status-badge saved';
+      document.getElementById('logoBadgeText').textContent = 'Logo salvo no Firebase';
+    }
+
+    // ===== ESTADO SEM LOGO =====
+    function estadoSemLogo() {
+      logoAtualExiste = false;
+      document.getElementById('logoImg').style.display = 'none';
+      document.getElementById('logoImg').src = '';
+      document.getElementById('logoPlaceholder').style.display = 'flex';
+      document.getElementById('logoInfo').style.display = 'none';
+
+      document.getElementById('btnEnviar').disabled = true;
+      document.getElementById('btnEnviar').style.display = 'inline-flex';
+      document.getElementById('btnAlterar').style.display = 'none';
+      document.getElementById('btnExcluir').style.display = 'none';
+
+      const badge = document.getElementById('logoBadge');
+      badge.className = 'status-badge empty';
+      document.getElementById('logoBadgeText').textContent = 'Nenhum logo salvo';
+    }
+
+    // ===== UTILITÁRIOS =====
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatarTamanho(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+  </script>
+
+</body>
+</html>

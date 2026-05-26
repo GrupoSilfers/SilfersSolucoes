@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M4 — Cadastro de Clientes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* HEADER */
+        .top-bar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #f8fafc; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .top-bar h1 { font-size: 12px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
+        .btn-exit {
+            background: none; border: 1.5px solid #94a3b8; color: #94a3b8; border-radius: 0;
+            padding: 5px 14px; font-size: 10px; font-weight: 400; cursor: pointer;
+            text-transform: uppercase; letter-spacing: .06em; transition: all .2s;
+        }
+        .btn-exit:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.08); }
+
+        /* MAIN */
+        .main { flex: 1; padding: 18px 24px; overflow-y: auto; }
+
+        /* FORM */
+        .form-card {
+            background: #fff; border-radius: 0; padding: 18px 22px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;
+        }
+        .form-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 10px; flex-wrap: wrap; }
+        .field { display: flex; flex-direction: column; }
+        .field label {
+            font-size: 8.5px; font-weight: 600; color: #64748b; text-transform: uppercase;
+            letter-spacing: .06em; margin-bottom: 3px;
+        }
+        .field input, .field select {
+            border: none; border-bottom: 1.5px solid #cbd5e1; background: #f8fafc;
+            padding: 6px 8px; font-size: 12px; font-family: 'Inter', sans-serif;
+            color: #1e293b; outline: none; transition: border-color .2s; border-radius: 0;
+        }
+        .field input:focus, .field select:focus { border-bottom-color: #4f46e5; background: #eef2ff; }
+        .field input::placeholder { color: #94a3b8; font-size: 11px; }
+        .f-code { width: 100px; }
+        .f-nome { flex: 1; min-width: 280px; }
+        .f-end { flex: 1; min-width: 400px; }
+        .f-cnpj { width: 200px; }
+        .f-uf { width: 55px; }
+        .f-cep { width: 120px; }
+        .f-ie { width: 180px; }
+        .field input.mono { font-family: 'Courier New', monospace; letter-spacing: .04em; font-size: 13px; }
+        .status-tag {
+            display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 8px;
+            border-radius: 0; text-transform: uppercase; letter-spacing: .06em; margin-left: 12px;
+        }
+        .status-novo { background: #dbeafe; color: #2563eb; }
+        .status-editando { background: #fef3c7; color: #d97706; }
+        .status-salvo { background: #dcfce7; color: #16a34a; }
+
+        /* ACTIONS */
+        .actions {
+            display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center;
+        }
+        .btn {
+            padding: 7px 18px; border: 1.5px solid #cbd5e1; border-radius: 0; font-size: 10px;
+            font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: .04em;
+            transition: all .2s; font-family: 'Inter', sans-serif;
+            background: #fff; color: #475569;
+        }
+        .btn:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+        .btn-danger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+        .actions-spacer { flex: 1; }
+
+        /* TABLE */
+        .tbl-card {
+            background: #fff; border-radius: 0; margin-top: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .tbl-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 18px; border-bottom: 1px solid #e2e8f0;
+        }
+        .tbl-header h2 { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+        .tbl-scroll { max-height: 360px; overflow-y: auto; }
+        .cli-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .cli-table th {
+            background: #f1f5f9; font-size: 8.5px; font-weight: 600; color: #64748b;
+            text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px;
+            border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 1;
+            white-space: nowrap;
+        }
+        .cli-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; color: #475569; font-weight: 400; font-size: 11px; }
+        .cli-table tbody tr:nth-child(odd) { background: #fff; }
+        .cli-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .cli-table tbody tr:hover td { background: #eef2ff; }
+        .cli-table tbody tr { cursor: pointer; transition: background .15s; }
+        .cli-table .mono { font-family: 'Courier New', monospace; font-size: 12px; }
+        .cli-table .center { text-align: center; }
+
+        /* FOOTER STATS */
+        .stats-bar {
+            display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px;
+            padding: 10px 18px; border-top: 2px solid #e2e8f0; background: #f8fafc;
+        }
+        .stat-item { text-align: center; min-width: 80px; }
+        .stat-label { font-size: 8px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+        .stat-value { font-size: 13px; font-weight: 600; color: #1e293b; font-family: 'Courier New', monospace; margin-top: 2px; }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; padding: 10px 20px;
+            border-radius: 0; font-size: 11px; font-weight: 600; color: #fff;
+            background: #1e293b; transform: translateY(80px); opacity: 0;
+            transition: all .3s ease; z-index: 99999; pointer-events: none;
+            max-width: 380px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #16a34a; }
+        .toast.error { background: #dc2626; }
+
+        /* LOADING */
+        .loading { text-align: center; padding: 30px; color: #94a3b8; font-size: 10px; }
+        .loading .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2px solid #e2e8f0; border-top-color: #4f46e5;
+            border-radius: 50%; animation: spin .6s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-msg { text-align: center; padding: 30px; color: #94a3b8; font-size: 11px; }
+
+        /* SEARCH */
+        .search-box { display: flex; gap: 6px; align-items: center; }
+        .search-box input {
+            border: 1.5px solid #cbd5e1; border-radius: 0; padding: 4px 8px;
+            font-size: 10px; font-family: 'Courier New', monospace; width: 140px;
+            outline: none; transition: border-color .2s;
+        }
+        .search-box input:focus { border-color: #4f46e5; }
+
+        @media print { body { background: #fff; } .top-bar, .actions, .toast { display: none !important; } }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="top-bar">
+        <h1><i class="fas fa-address-book" style="font-size:13px;margin-right:8px;opacity:.7;"></i> Cadastro de Clientes</h1>
+        <button class="btn-exit" onclick="sairDoModulo()">&#10005; Sair</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- FORM -->
+        <div class="form-card">
+            <div style="display:flex;align-items:center;margin-bottom:12px;">
+                <span style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.05em;">
+                    Dados do Cliente
+                </span>
+                <span class="status-tag status-novo" id="statusTag">Novo</span>
+            </div>
+
+            <div class="form-row">
+                <div class="field f-code">
+                    <label>Código</label>
+                    <input type="text" id="cliCodigo" class="mono" placeholder="001"
+                           style="text-transform:uppercase;" maxlength="10">
+                </div>
+                <div class="field f-nome">
+                    <label>Nome do Cliente</label>
+                    <input type="text" id="cliNome" placeholder="Razão Social / Nome completo"
+                           style="text-transform:uppercase;">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field f-end">
+                    <label>Endereço Completo</label>
+                    <input type="text" id="cliEnd" placeholder="Rua, nº, Bairro, Cidade / UF"
+                           style="text-transform:uppercase;">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field f-cnpj">
+                    <label>CNPJ</label>
+                    <input type="text" id="cliCNPJ" class="mono" placeholder="00.000.000/0001-00" maxlength="18">
+                </div>
+                <div class="field f-uf">
+                    <label>UF</label>
+                    <input type="text" id="cliUF" placeholder="DF" maxlength="2"
+                           style="text-transform:uppercase;text-align:center;">
+                </div>
+                <div class="field f-cep">
+                    <label>CEP</label>
+                    <input type="text" id="cliCEP" class="mono" placeholder="00.000-000" maxlength="10">
+                </div>
+                <div class="field f-ie">
+                    <label>Inscrição Estadual (IE)</label>
+                    <input type="text" id="cliIE" class="mono" placeholder="—">
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="actions">
+                <button class="btn" onclick="novoCadastro()">&#128196; Novo</button>
+                <button class="btn" onclick="salvarCliente()" id="btnSalvarCli">&#128190; Salvar</button>
+                <button class="btn btn-danger" onclick="excluirCliente()" id="btnExcluir">&#128465; Excluir</button>
+                <div class="actions-spacer"></div>
+                <button class="btn" onclick="gerarRelatorioPDF()">&#128202; Relatório PDF</button>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="tbl-card">
+            <div class="tbl-header">
+                <h2>Clientes Cadastrados</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar..."
+                           oninput="filtrarTabela(this.value)">
+                </div>
+            </div>
+
+            <div id="tblLoading" class="loading" style="display:none;">
+                <span class="spinner"></span> Carregando clientes...
+            </div>
+
+            <div class="tbl-scroll" id="tblScroll" style="display:none;">
+                <table class="cli-table">
+                    <thead>
+                        <tr>
+                            <th class="center">#</th>
+                            <th>Código</th>
+                            <th>Nome</th>
+                            <th>CNPJ</th>
+                            <th class="center">UF</th>
+                            <th>CEP</th>
+                            <th>IE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblBody"></tbody>
+                </table>
+            </div>
+
+            <div id="tblEmpty" class="empty-msg" style="display:none;">
+                Nenhum cliente cadastrado.
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-bar" id="statsBar" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toastEl"></div>
+
+    <!-- FIREBASE SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, getDoc, doc, setDoc, deleteDoc }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",
+            authDomain: "silferssolucoes.firebaseapp.com",
+            projectId: "silferssolucoes",
+            storageBucket: "silferssolucoes.firebasestorage.app",
+            messagingSenderId: "923480581130",
+            appId: "1:923480581130:web:9c3e4d8ccab43354c16bf3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+        window._db         = db;
+        window._collection = collection;
+        window._getDocs    = getDocs;
+        window._getDoc     = getDoc;
+        window._doc        = doc;
+        window._setDoc     = setDoc;
+        window._deleteDoc  = deleteDoc;
+        window._fbReady    = true;
+        window.dispatchEvent(new Event('fbReady'));
+    </script>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        let _editandoCodigo = '';
+        let _todosClientes = [];
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toastEl');
+            t.textContent = msg;
+            t.className = 'toast show ' + (type || '');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function novoCadastro() {
+            _editandoCodigo = '';
+            ['cliCodigo','cliNome','cliEnd','cliCNPJ','cliUF','cliCEP','cliIE'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('cliCodigo').focus();
+            setStatus('novo');
+        }
+
+        function setStatus(s) {
+            const el = document.getElementById('statusTag');
+            if (s === 'novo')      { el.textContent = 'Novo';      el.className = 'status-tag status-novo'; }
+            if (s === 'editando')  { el.textContent = 'Editando';  el.className = 'status-tag status-editando'; }
+            if (s === 'salvo')     { el.textContent = 'Salvo';     el.className = 'status-tag status-salvo'; }
+        }
+
+        async function salvarCliente() {
+            if (!window._fbReady) { showToast('Firebase não inicializado.', 'error'); return; }
+            const codigo = document.getElementById('cliCodigo').value.trim().toUpperCase();
+            const nome   = document.getElementById('cliNome').value.trim().toUpperCase();
+            if (!codigo) { showToast('Informe o código do cliente.', 'error'); document.getElementById('cliCodigo').focus(); return; }
+            if (!nome)   { showToast('Informe o nome do cliente.', 'error'); document.getElementById('cliNome').focus(); return; }
+
+            if (_editandoCodigo !== codigo) {
+                const snap = await window._getDoc(window._doc(window._db, 'clientes', codigo));
+                if (snap.exists()) {
+                    showToast('\u26a0 Código ' + codigo + ' já existe! Use outro código.', 'error');
+                    document.getElementById('cliCodigo').focus();
+                    document.getElementById('cliCodigo').style.borderBottomColor = '#ef4444';
+                    setTimeout(() => document.getElementById('cliCodigo').style.borderBottomColor = '', 3000);
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btnSalvarCli');
+            btn.disabled = true;
+            try {
+                const dados = {
+                    codigo, nome,
+                    endereco: document.getElementById('cliEnd').value.trim().toUpperCase(),
+                    cnpj:     document.getElementById('cliCNPJ').value.trim(),
+                    uf:       document.getElementById('cliUF').value.trim().toUpperCase(),
+                    cep:      document.getElementById('cliCEP').value.trim(),
+                    ie:       document.getElementById('cliIE').value.trim(),
+                    atualizadoEm: new Date().toISOString()
+                };
+                if (_editandoCodigo && _editandoCodigo !== codigo) {
+                    await window._deleteDoc(window._doc(window._db, 'clientes', _editandoCodigo));
+                }
+                await window._setDoc(window._doc(window._db, 'clientes', codigo), dados);
+                _editandoCodigo = codigo;
+                setStatus('salvo');
+                showToast('\u2714 Cliente ' + codigo + ' salvo com sucesso!', 'success');
+                carregarClientes();
+            } catch(e) {
+                showToast('Erro ao salvar: ' + e.message, 'error');
+            } finally { btn.disabled = false; }
+        }
+
+        async function excluirCliente() {
+            const codigo = document.getElementById('cliCodigo').value.trim().toUpperCase();
+            if (!codigo) { showToast('Nenhum cliente selecionado.', 'error'); return; }
+            if (!confirm('Deseja realmente excluir o cliente ' + codigo + '?')) return;
+            try {
+                await window._deleteDoc(window._doc(window._db, 'clientes', codigo));
+                showToast('\u2714 Cliente ' + codigo + ' excluído.', 'success');
+                novoCadastro();
+                carregarClientes();
+            } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+        }
+
+        async function carregarClientes() {
+            const loading = document.getElementById('tblLoading');
+            const scroll  = document.getElementById('tblScroll');
+            const tbody   = document.getElementById('tblBody');
+            const empty   = document.getElementById('tblEmpty');
+            const stats   = document.getElementById('statsBar');
+            loading.style.display = 'block'; scroll.style.display = 'none';
+            empty.style.display = 'none'; stats.style.display = 'none'; tbody.innerHTML = '';
+            try {
+                if (!window._fbReady) await new Promise(r => window.addEventListener('fbReady', r, {once:true}));
+                const snap = await window._getDocs(window._collection(window._db, 'clientes'));
+                _todosClientes = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    _todosClientes.push({
+                        id: d.id, codigo: data.codigo || d.id, nome: data.nome || '',
+                        endereco: data.endereco || '', cnpj: data.cnpj || '',
+                        uf: data.uf || '', cep: data.cep || '', ie: data.ie || ''
+                    });
+                });
+                _todosClientes.sort((a, b) => a.nome.localeCompare(b.nome));
+                if (_todosClientes.length === 0) { loading.style.display = 'none'; empty.style.display = 'block'; return; }
+                renderTabela(_todosClientes);
+                const n = _todosClientes.length;
+                const ufCount = {};
+                _todosClientes.forEach(c => { if (c.uf) ufCount[c.uf] = (ufCount[c.uf] || 0) + 1; });
+                const topUF = Object.entries(ufCount).sort((a,b) => b[1]-a[1]).slice(0, 4);
+                let ufHtml = topUF.map(([uf, c]) => '<strong>' + uf + '</strong>: ' + c).join(' &nbsp;|&nbsp; ');
+                stats.innerHTML =
+                    '<div class="stat-item"><div class="stat-label">Total Clientes</div><div class="stat-value">' + n + '</div></div>'
+                  + '<div class="stat-item"><div class="stat-label">Por UF</div><div class="stat-value" style="font-size:10px;font-family:Inter,sans-serif;">' + (ufHtml || '\u2014') + '</div></div>';
+                loading.style.display = 'none'; scroll.style.display = 'block'; stats.style.display = 'flex';
+            } catch(e) { loading.innerHTML = '<span style="color:#ef4444;">Erro: ' + e.message + '</span>'; }
+        }
+
+        function renderTabela(lista) {
+            const tbody = document.getElementById('tblBody');
+            let rows = '';
+            lista.forEach((c, i) => {
+                rows += '<tr data-cod="' + c.codigo + '" onclick="selecionarCliente(this.dataset.cod)">'
+                    + '<td class="center mono">' + (i + 1) + '</td>'
+                    + '<td class="mono" style="font-weight:600;color:#4f46e5;">' + c.codigo + '</td>'
+                    + '<td>' + c.nome + '</td>'
+                    + '<td class="mono">' + c.cnpj + '</td>'
+                    + '<td class="center">' + c.uf + '</td>'
+                    + '<td class="mono">' + c.cep + '</td>'
+                    + '<td class="mono">' + c.ie + '</td>'
+                    + '</tr>';
+            });
+            tbody.innerHTML = rows;
+        }
+
+        function filtrarTabela(termo) {
+            const t = termo.toUpperCase();
+            const filtrados = _todosClientes.filter(c =>
+                c.codigo.toUpperCase().includes(t) || c.nome.toUpperCase().includes(t)
+                || c.cnpj.includes(t) || c.uf.toUpperCase().includes(t)
+            );
+            renderTabela(filtrados);
+        }
+
+        async function selecionarCliente(codigo) {
+            try {
+                const snap = await window._getDoc(window._doc(window._db, 'clientes', codigo));
+                if (!snap.exists()) { showToast('Cliente não encontrado.', 'error'); return; }
+                const d = snap.data();
+                document.getElementById('cliCodigo').value = d.codigo || codigo;
+                document.getElementById('cliNome').value   = d.nome || '';
+                document.getElementById('cliEnd').value    = d.endereco || '';
+                document.getElementById('cliCNPJ').value   = d.cnpj || '';
+                document.getElementById('cliUF').value     = d.uf || '';
+                document.getElementById('cliCEP').value    = d.cep || '';
+                document.getElementById('cliIE').value     = d.ie || '';
+                _editandoCodigo = d.codigo || codigo;
+                setStatus('editando');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+        }
+
+        function gerarRelatorioPDF() {
+            if (_todosClientes.length === 0) { showToast('Nenhum cliente para gerar relatório.', 'error'); return; }
+            const w = window.open('', '_blank');
+            const rows = _todosClientes.map((c, i) =>
+                '<tr>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:11px;">' + (i+1) + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;font-family:monospace;font-size:11px;font-weight:600;color:#4f46e5;">' + c.codigo + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;font-size:11px;">' + c.nome + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;font-family:monospace;font-size:11px;">' + c.cnpj + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:11px;">' + c.uf + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;font-family:monospace;font-size:11px;">' + c.cep + '</td>'
+                + '<td style="padding:4px 6px;border:1px solid #ddd;font-family:monospace;font-size:11px;">' + c.ie + '</td>'
+                + '</tr>'
+            ).join('');
+            const today = new Date().toLocaleDateString('pt-BR');
+            w.document.write('<!DOCTYPE html><html><head><title>Relatório de Clientes</title>'
+                + '<style>body{font-family:Inter,Arial,sans-serif;padding:30px;color:#1e293b;}'
+                + 'h1{font-size:16px;margin-bottom:4px;} .sub{font-size:10px;color:#64748b;margin-bottom:16px;}'
+                + 'table{border-collapse:collapse;width:100%;} th{background:#f1f5f9;padding:6px 8px;'
+                + 'font-size:9px;text-transform:uppercase;border:1px solid #ddd;color:#64748b;font-weight:600;}'
+                + '.footer{margin-top:16px;font-size:9px;color:#94a3b8;text-align:right;}'
+                + '</style></head><body>'
+                + '<h1>&#128203; Relatório de Clientes Cadastrados</h1>'
+                + '<div class="sub">Gerado em ' + today + ' \u2014 Total: ' + _todosClientes.length + ' clientes</div>'
+                + '<table><thead><tr><th>#</th><th>Código</th><th>Nome</th><th>CNPJ</th><th>UF</th><th>CEP</th><th>IE</th></tr></thead><tbody>' + rows + '</tbody></table>'
+                + '<div class="footer">Silfer\u2019s Soluções Empresariais \u2014 Sistema de Precificação</div>'
+                + '</body></html>');
+            w.document.close();
+            setTimeout(() => w.print(), 500);
+        }
+
+        function sairDoModulo() {
+            try {
+                const p = window.parent;
+                if (p && p !== window && p.document) {
+                    p.document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+                    p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(a => a.classList.remove('active'));
+                    const frame = p.document.getElementById('content-frame');
+                    if (frame) frame.src = 'M00_Dashboard.html';
+                    const title = p.document.getElementById('page-title');
+                    if (title) title.innerText = 'Dashboard';
+                    const navLinks = p.document.querySelectorAll('nav a[onclick]');
+                    for (const lnk of navLinks) {
+                        const oc = lnk.getAttribute('onclick') || '';
+                        if (oc.indexOf('Dashboard') !== -1) {
+                            lnk.classList.add('active'); break;
+                        }
+                    }
+                    return;
+                }
+            } catch(e) {}
+            window.location.href = 'M00_Dashboard.html';
+        }
+
+        function init() {
+            if (window._fbReady) { carregarClientes(); }
+            else { window.addEventListener('fbReady', () => carregarClientes()); }
+        }
+        init();
+    </script>
+</body>
+</html>

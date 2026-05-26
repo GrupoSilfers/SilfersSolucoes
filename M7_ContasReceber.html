@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>SILFER'S – Contas a Receber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body{font-family:'Inter',sans-serif;background:#f8fafc;margin:0;display:flex;flex-direction:column;height:100vh}
+        #main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;width:100%}
+
+        /* ── Top Bar ────────────────────────── */
+        .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 20px;
+                background:linear-gradient(135deg,#0f172a,#1e293b);color:#f8fafc;height:32px}
+        .topbar-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+        .topbar-title i{color:#818cf8}
+        .topbar-actions{display:flex;gap:6px}
+        .topbar-actions button{background:none;border:1px solid rgba(255,255,255,.15);color:#94a3b8;
+                              padding:3px 10px;font-size:9px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;
+                              text-transform:uppercase;letter-spacing:.06em}
+        .topbar-actions button:hover{background:rgba(255,255,255,.08);color:#f8fafc}
+
+        /* ── Dashboard Bar ──────────────────── */
+        .dashboard-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:12px 20px;
+                       background:white;border-bottom:1px solid #e2e8f0;align-items:center}
+        .stat-card-inline{background:white;padding:8px 10px;border:1px solid #e2e8f0;display:flex;flex-direction:column;
+                          justify-content:center;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+        .stat-label{text-transform:uppercase;font-size:9px;font-weight:600;color:#64748b;letter-spacing:.05em;margin-bottom:1px}
+        .card-val{font-size:18px;color:#1e293b;font-weight:500;line-height:1.2;font-family:'Courier New',monospace}
+        .card-val.pos{color:#16a34a} .card-val.neg{color:#dc2626} .card-val.warn{color:#d97706}
+        .card-val-sm{font-size:13px}
+        .search-card-vertical{background:white;border:1px solid #e2e8f0;display:flex;flex-direction:column;
+                              align-items:flex-start;justify-content:center;padding:4px 12px;height:48px;
+                              box-shadow:0 1px 2px rgba(0,0,0,.05)}
+        .search-card-vertical i{color:#94a3b8;font-size:10px;margin-bottom:2px}
+        .search-card-vertical input{width:100%;border:none;outline:none;text-align:left;font-size:11px;background:transparent}
+
+        /* ── Tab Bar ────────────────────────── */
+        .tab-bar{display:flex;gap:0;padding:0 20px;background:white;border-bottom:2px solid #e2e8f0}
+        .tab-btn{padding:8px 20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+                 color:#94a3b8;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;
+                 margin-bottom:-2px;transition:all .2s;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px}
+        .tab-btn:hover{color:#4f46e5}
+        .tab-btn.active{color:#4f46e5;border-bottom-color:#4f46e5}
+        .tab-view{display:none;flex-direction:column;flex:1;overflow:hidden}
+        .tab-view.active{display:flex}
+
+        /* ── Aging Bar ──────────────────────── */
+        .aging-section{padding:8px 20px 10px;background:white;border-bottom:1px solid #e2e8f0}
+        .aging-label{font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+        .aging-bar{display:flex;height:22px;border-radius:3px;overflow:hidden;background:#f1f5f9}
+        .aging-segment{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;
+                       color:#fff;letter-spacing:.03em;transition:width .5s ease;min-width:0;overflow:hidden}
+        .aging-segment.a0{background:#16a34a} .aging-segment.a30{background:#eab308;color:#422006}
+        .aging-segment.a60{background:#f97316} .aging-segment.a90{background:#dc2626}
+        .aging-legend{display:flex;gap:14px;margin-top:6px}
+        .aging-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b}
+        .aging-legend-item .dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+        /* ── Filter Chips ───────────────────── */
+        .filter-bar{display:flex;gap:6px;padding:8px 20px;background:white;align-items:center;border-bottom:1px solid #e2e8f0}
+        .filter-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:9px;font-weight:600;
+                     text-transform:uppercase;letter-spacing:.04em;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;
+                     cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+        .filter-chip:hover{border-color:#818cf8;color:#4f46e5}
+        .filter-chip.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+        .filter-chip .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+        .dot-red{background:#dc2626} .dot-yellow{background:#eab308} .dot-green{background:#16a34a} .dot-blue{background:#3b82f6}
+
+        /* ── Table ──────────────────────────── */
+        .excel-container{flex:1;overflow:auto;border:1px solid #e2e8f0;background:#fff;
+                         margin:0 20px 10px 20px;border-radius:4px}
+        table{border-collapse:separate;border-spacing:0;table-layout:auto;width:100%;user-select:none}
+        th,td{height:30px;padding:0 12px;font-size:11px;white-space:nowrap;background:white;line-height:30px;
+              border:none;transition:background-color .1s ease}
+        td{border-bottom:1px solid #f8fafc}
+        th{position:sticky;top:0;background:#f8fafc;z-index:40;border-bottom:2px solid #e2e8f0;color:#64748b;
+           font-weight:600;text-align:left;cursor:pointer}
+        th:hover{color:#4f46e5}
+        th .sort-icon{font-size:8px;margin-left:3px;opacity:.4}
+        th.sorted .sort-icon{opacity:1;color:#4f46e5}
+        tbody tr:hover td{background-color:#f1f5f9 !important}
+        .text-right{text-align:right} .text-center{text-align:center}
+        .mono{font-family:'Courier New',monospace}
+        .pos{color:#16a34a} .neg{color:#dc2626} .warn{color:#d97706}
+        .row-vencido td{background:#fff5f5 !important}
+        .row-vencido:hover td{background:#fee2e2 !important}
+        .row-pago td{opacity:.5}
+        .pago-cb{width:14px;height:14px;accent-color:#4f46e5;cursor:pointer}
+
+        /* ── Status badges ──────────────────── */
+        .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;font-size:9px;font-weight:600;
+               border-radius:2px;letter-spacing:.03em}
+        .badge-vencido{background:#fee2e2;color:#dc2626}
+        .badge-avencer{background:#fef9c3;color:#a16207}
+        .badge-emdia{background:#dcfce7;color:#16a34a}
+        .badge-pago{background:#e0e7ff;color:#4f46e5}
+        .badge-a{display:inline-block;padding:2px 10px;font-size:9px;font-weight:700;background:#dcfce7;color:#16a34a;border-radius:2px;letter-spacing:.05em}
+        .badge-b{display:inline-block;padding:2px 10px;font-size:9px;font-weight:700;background:#fef9c3;color:#a16207;border-radius:2px;letter-spacing:.05em}
+        .badge-c{display:inline-block;padding:2px 10px;font-size:9px;font-weight:700;background:#fee2e2;color:#dc2626;border-radius:2px;letter-spacing:.05em}
+
+        /* ── Por Cliente section ────────────── */
+        .cli-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:12px 20px;background:white;border-bottom:1px solid #e2e8f0}
+        .cli-card{padding:8px 10px;border:1px solid #e2e8f0;display:flex;flex-direction:column;justify-content:center;
+                  box-shadow:0 1px 3px rgba(0,0,0,.04)}
+
+        .insight-box{margin:0 20px 10px;padding:14px 18px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);
+                     border:1px solid #c7d2fe;border-left:4px solid #818cf8;font-size:11px;color:#334155;line-height:1.6}
+        .insight-box strong{color:#4f46e5}
+
+        /* ── Pareto Bar ────────────────────── */
+        .pareto-section{padding:0 20px 10px;background:white;border-bottom:1px solid #e2e8f0}
+        .pareto-label{font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+        .pareto-bar{display:flex;height:26px;border-radius:3px;overflow:hidden;background:#f1f5f9}
+        .pareto-seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
+                    color:#fff;letter-spacing:.03em;transition:width .5s ease;min-width:0;overflow:hidden}
+        .pareto-seg.seg-a{background:#16a34a} .pareto-seg.seg-b{background:#eab308;color:#422006}
+        .pareto-seg.seg-c{background:#dc2626}
+        .pareto-legend{display:flex;gap:16px;margin-top:6px}
+        .pareto-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b}
+        .pareto-legend-item .dot-sq{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+        /* ── Footer ─────────────────────────── */
+        .footer-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 20px;
+                    background:white;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8;height:24px}
+
+        /* ── Loading ────────────────────────── */
+        #loading-overlay{position:fixed;inset:0;background:rgba(15,23,42,.85);z-index:99999;display:flex;
+                         flex-direction:column;align-items:center;justify-content:center;gap:14px}
+        .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#818cf8;
+                 border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-text{color:#94a3b8;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+
+        /* ── Toast ──────────────────────────── */
+        #toast-container{position:fixed;top:12px;right:12px;z-index:99999;display:flex;flex-direction:column;gap:6px}
+        .toast{padding:8px 16px;font-size:10px;font-weight:500;color:#fff;background:#334155;
+               border-left:3px solid #818cf8;animation:fadeIn .3s;letter-spacing:.03em}
+        .toast.erro{border-left-color:#ef4444}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- Loading -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Carregando contas a receber...</div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container"></div>
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-title"><i class="fas fa-hand-holding-usd"></i> Contas a Receber</div>
+        <div class="topbar-actions">
+            <button onclick="sairDoModulo()"><i class="fas fa-arrow-left"></i>&ensp;Sair</button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div id="main-content">
+
+        <!-- KPI Dashboard (always visible) -->
+        <div class="dashboard-bar" id="dashContas">
+            <div class="stat-card-inline">
+                <span class="stat-label">Total a Receber</span>
+                <span class="card-val" id="kpi-total">–</span>
+            </div>
+            <div class="stat-card-inline">
+                <span class="stat-label">Vencido</span>
+                <span class="card-val neg" id="kpi-vencido">–</span>
+            </div>
+            <div class="stat-card-inline">
+                <span class="stat-label">A Vencer</span>
+                <span class="card-val warn" id="kpi-avencer">–</span>
+            </div>
+            <div class="stat-card-inline">
+                <span class="stat-label">Recebido (Total)</span>
+                <span class="card-val pos" id="kpi-recebido">–</span>
+            </div>
+            <div class="stat-card-inline">
+                <span class="stat-label">Inadimplência</span>
+                <span class="card-val neg" id="kpi-inadimplencia">–</span>
+            </div>
+            <div class="search-card-vertical">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Pesquisar por pedido ou cliente..." oninput="filtrarTabela()">
+            </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('contas')"><i class="fas fa-file-invoice-dollar"></i> Contas</button>
+            <button class="tab-btn" onclick="switchTab('clientes')"><i class="fas fa-users"></i> Por Cliente</button>
+        </div>
+
+        <!-- ════════════════════════════════════
+             TAB 1: CONTAS A RECEBER
+             ════════════════════════════════════ -->
+        <div class="tab-view active" id="view-contas">
+
+            <!-- Aging -->
+            <div class="aging-section">
+                <div class="aging-label">Análise de Envelhecimento (Aging)</div>
+                <div class="aging-bar" id="agingBar">
+                    <div class="aging-segment a0" id="aging0" style="width:0%"></div>
+                    <div class="aging-segment a30" id="aging30" style="width:0%"></div>
+                    <div class="aging-segment a60" id="aging60" style="width:0%"></div>
+                    <div class="aging-segment a90" id="aging90" style="width:0%"></div>
+                </div>
+                <div class="aging-legend">
+                    <div class="aging-legend-item"><span class="dot" style="background:#16a34a"></span> Em dia / até 30d</div>
+                    <div class="aging-legend-item"><span class="dot" style="background:#eab308"></span> 31–60 dias</div>
+                    <div class="aging-legend-item"><span class="dot" style="background:#f97316"></span> 61–90 dias</div>
+                    <div class="aging-legend-item"><span class="dot" style="background:#dc2626"></span> &gt; 90 dias</div>
+                    <div class="aging-legend-item" style="margin-left:auto;font-weight:600;" id="agingTotalLabel">–</div>
+                </div>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="filter-bar">
+                <span style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:4px;">Filtrar:</span>
+                <div class="filter-chip active" data-filter="todos" onclick="setFiltro(this,'todos')">Todos</div>
+                <div class="filter-chip" data-filter="vencido" onclick="setFiltro(this,'vencido')">
+                    <span class="dot dot-red"></span> Vencido
+                </div>
+                <div class="filter-chip" data-filter="avencer" onclick="setFiltro(this,'avencer')">
+                    <span class="dot dot-yellow"></span> A Vencer (15d)
+                </div>
+                <div class="filter-chip" data-filter="emdia" onclick="setFiltro(this,'emdia')">
+                    <span class="dot dot-green"></span> Em Dia
+                </div>
+                <div class="filter-chip" data-filter="pago" onclick="setFiltro(this,'pago')">
+                    <span class="dot dot-blue"></span> Pago
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="excel-container" id="excelContainer">
+                <table id="crTable">
+                    <thead>
+                        <tr>
+                            <th class="text-center" data-col="status" style="width:80px">Status <i class="fas fa-sort sort-icon"></i></th>
+                            <th data-col="pedido">Pedido <i class="fas fa-sort sort-icon"></i></th>
+                            <th data-col="cliente" style="min-width:200px">Cliente <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" data-col="dataPedido">Data Pedido <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" data-col="vencimento">Vencimento <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col="dias">Dias <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col="valor">Valor (R$) <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col="lucro">Lucro Líq. <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" data-col="formaPgto">Forma Pgto <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" style="width:50px">Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════
+             TAB 2: POR CLIENTE
+             ════════════════════════════════════ -->
+        <div class="tab-view" id="view-clientes">
+
+            <!-- Client KPIs -->
+            <div class="cli-kpis">
+                <div class="cli-card">
+                    <span class="stat-label">Clientes Ativos</span>
+                    <span class="card-val" id="cli-total">–</span>
+                </div>
+                <div class="cli-card">
+                    <span class="stat-label">Receita Total</span>
+                    <span class="card-val" id="cli-receita">–</span>
+                </div>
+                <div class="cli-card">
+                    <span class="stat-label">Lucro Total</span>
+                    <span class="card-val pos" id="cli-lucro">–</span>
+                </div>
+                <div class="cli-card">
+                    <span class="stat-label">Ticket Médio</span>
+                    <span class="card-val" id="cli-ticket">–</span>
+                </div>
+                <div class="cli-card">
+                    <span class="stat-label">Top Cliente</span>
+                    <span class="card-val card-val-sm" id="cli-top" style="font-family:'Inter',sans-serif;font-size:12px">–</span>
+                </div>
+            </div>
+
+            <!-- Pareto Bar -->
+            <div class="pareto-section">
+                <div class="pareto-label">Distribuição de Receita por Cliente (Pareto)</div>
+                <div class="pareto-bar" id="cliParetoBar">
+                    <div class="pareto-seg seg-a" id="cli-pareto-a" style="width:0%"></div>
+                    <div class="pareto-seg seg-b" id="cli-pareto-b" style="width:0%"></div>
+                    <div class="pareto-seg seg-c" id="cli-pareto-c" style="width:0%"></div>
+                </div>
+                <div class="pareto-legend">
+                    <div class="pareto-legend-item"><span class="dot-sq" style="background:#16a34a"></span> Classe A</div>
+                    <div class="pareto-legend-item"><span class="dot-sq" style="background:#eab308"></span> Classe B</div>
+                    <div class="pareto-legend-item"><span class="dot-sq" style="background:#dc2626"></span> Classe C</div>
+                    <div class="pareto-legend-item" style="margin-left:auto;font-weight:600;" id="cliParetoLabel">–</div>
+                </div>
+            </div>
+
+            <!-- Client Table -->
+            <div class="excel-container" id="cliContainer">
+                <table id="cliTable" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width:35px">#</th>
+                            <th data-col2="nome" style="min-width:200px">Cliente <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="pedidos">Pedidos <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="receita">Receita (R$) <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="custo">Custo (R$) <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="lucro">Lucro (R$) <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="margem">Margem % <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="ticket">Ticket Médio <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-right" data-col2="pctPago">% Pago <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" style="width:60px">Classe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cliBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Insight -->
+            <div class="insight-box" id="cliInsight">Carregando...</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            <span id="footer-info">Contas a Receber – SIGA Silfer's</span>
+            <span id="footer-count">–</span>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, getDoc, doc, setDoc, query, where }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey:            "AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",
+            authDomain:        "silferssolucoes.firebaseapp.com",
+            projectId:         "silferssolucoes",
+            storageBucket:     "silferssolucoes.firebasestorage.app",
+            messagingSenderId: "923480581130",
+            appId:             "1:923480581130:web:9c3e4d8ccab43354c16bf3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        window._db         = db;
+        window._collection = collection;
+        window._getDocs    = getDocs;
+        window._getDoc     = getDoc;
+        window._doc        = doc;
+        window._setDoc     = setDoc;
+        window._query      = query;
+        window._where      = where;
+        window._fbReady    = true;
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <script>
+        /* ══════════════════════════════════════
+           VARIÁVEIS GLOBAIS
+           ══════════════════════════════════════ */
+        let contasData   = [];
+        let clientesData = [];
+        let sortCol      = 'vencimento';
+        let sortAsc      = true;
+        let sortCol2     = 'receita';
+        let sortAsc2     = false;
+        let filtroAtual  = 'todos';
+        let activeTab    = 'contas';
+
+        /* ══════════════════════════════════════
+           UTILITÁRIOS
+           ══════════════════════════════════════ */
+        function fmt(v) { return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+        function fmtInt(v) { return (v||0).toLocaleString('pt-BR'); }
+        function parseNum(s) {
+            if (typeof s === 'number') return s;
+            if (!s) return 0;
+            return parseFloat(String(s).replace(/\./g,'').replace(',','.')) || 0;
+        }
+        function parseDate(s) {
+            if (!s) return null;
+            if (s instanceof Date) return isNaN(s) ? null : s;
+            if (typeof s === 'object' && s.seconds) return new Date(s.seconds * 1000);
+            const str = String(s).trim();
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) { const [d,m,y] = str.split('/'); return new Date(+y,+m-1,+d); }
+            if (/^\d{4}-\d{2}-\d{2}/.test(str)) return new Date(str);
+            const dt = new Date(str); return isNaN(dt) ? null : dt;
+        }
+        function fmtDate(d) { if (!d || isNaN(d)) return '–'; return d.toLocaleDateString('pt-BR'); }
+        function hoje() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+        function diffDias(vencimento) {
+            if (!vencimento || isNaN(vencimento)) return null;
+            return Math.floor((vencimento - hoje()) / 86400000);
+        }
+        function getStatusConta(venc, pago) {
+            if (pago) return { label:'Pago', cls:'badge-pago', filter:'pago', order:4, icon:'✅' };
+            const dias = diffDias(venc);
+            if (dias === null) return { label:'Sem Data', cls:'badge-avencer', filter:'emdia', order:3, icon:'⚪' };
+            if (dias < 0) return { label:'Vencido', cls:'badge-vencido', filter:'vencido', order:1, icon:'\u{1F534}' };
+            if (dias <= 15) return { label:'A Vencer', cls:'badge-avencer', filter:'avencer', order:2, icon:'\u{1F7E1}' };
+            return { label:'Em Dia', cls:'badge-emdia', filter:'emdia', order:3, icon:'\u{1F7E2}' };
+        }
+        function showToast(msg, tipo) {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = 'toast' + (tipo === 'erro' ? ' erro' : '');
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        /* ══════════════════════════════════════
+           TAB SWITCHING (FIXED — barra KPI fica fixa)
+           ══════════════════════════════════════ */
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+            if (tab === 'contas') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('view-contas').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('view-clientes').classList.add('active');
+                if (clientesData.length > 0) renderClientes();
+            }
+        }
+
+        /* ══════════════════════════════════════
+           CARREGAR DADOS DO FIREBASE
+           ══════════════════════════════════════ */
+        async function carregarContas() {
+            try {
+                const db = window._db;
+                const snap = await window._getDocs(window._collection(db, 'pedidos'));
+                contasData = [];
+
+                snap.forEach(d => {
+                    const data = d.data();
+                    const t = data.totais || {};
+                    const rod = data.rodape || {};
+                    const cli = data.cliente || {};
+
+                    const valor = parseFloat(t.vlTotal) || parseFloat(t.totalMerc) || 0;
+                    const lucro = parseFloat(t.lucroLiquido) || 0;
+                    const custo = valor - lucro;
+                    const vencDate = parseDate(rod.prazoPgto || rod.vencimento);
+                    const pedidoDate = parseDate(data.dataPedido);
+                    const pago = !!data.pago;
+
+                    contasData.push({
+                        id:         d.id,
+                        pedido:     data.numeroPedido || d.id,
+                        cliente:    cli.nome || '–',
+                        dataPedido: pedidoDate,
+                        vencimento: vencDate,
+                        dias:       diffDias(vencDate),
+                        valor:      valor,
+                        lucro:      lucro,
+                        custo:      custo,
+                        formaPgto:  rod.formaPgto || '–',
+                        pago:       pago,
+                        status:     getStatusConta(vencDate, pago)
+                    });
+                });
+
+                atualizarKPIs();
+                atualizarAging();
+                ordenarERenderizar();
+                calcularClientes();
+                showToast('Contas a receber: ' + contasData.length + ' registros carregados');
+
+            } catch(e) {
+                console.error(e);
+                showToast('Erro ao carregar: ' + e.message, 'erro');
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        /* ══════════════════════════════════════
+           KPIs (CONTAS)
+           ══════════════════════════════════════ */
+        function atualizarKPIs() {
+            const naoPageos = contasData.filter(c => !c.pago);
+            const pagos     = contasData.filter(c => c.pago);
+            const totalReceber = naoPageos.reduce((s,c) => s + c.valor, 0);
+            const vencido      = naoPageos.filter(c => c.status.filter === 'vencido').reduce((s,c) => s + c.valor, 0);
+            const aVencer      = naoPageos.filter(c => c.status.filter !== 'vencido').reduce((s,c) => s + c.valor, 0);
+            const recebido     = pagos.reduce((s,c) => s + c.valor, 0);
+            const inadimplencia = (totalReceber + recebido) > 0 ? (vencido / (totalReceber + recebido)) * 100 : 0;
+            document.getElementById('kpi-total').textContent = fmt(totalReceber);
+            document.getElementById('kpi-vencido').textContent = fmt(vencido);
+            document.getElementById('kpi-avencer').textContent = fmt(aVencer);
+            document.getElementById('kpi-recebido').textContent = fmt(recebido);
+            document.getElementById('kpi-inadimplencia').textContent = fmt(inadimplencia) + '%';
+        }
+
+        /* ══════════════════════════════════════
+           AGING
+           ══════════════════════════════════════ */
+        function atualizarAging() {
+            const naoPageos = contasData.filter(c => !c.pago);
+            let a0=0, a30=0, a60=0, a90=0;
+            naoPageos.forEach(c => {
+                const dias = c.dias;
+                if (dias === null || dias >= 0)  a0  += c.valor;
+                else if (dias >= -30)            a30 += c.valor;
+                else if (dias >= -60)            a60 += c.valor;
+                else                             a90 += c.valor;
+            });
+            const total = a0+a30+a60+a90;
+            const pct = v => Math.max(v > 0 ? 8 : 0, (v / total) * 100);
+            if (total <= 0) {
+                document.getElementById('aging0').style.width='100%';
+                document.getElementById('aging0').textContent='Sem pendências';
+                ['aging30','aging60','aging90'].forEach(id => { document.getElementById(id).style.width='0%'; document.getElementById(id).textContent=''; });
+                document.getElementById('agingTotalLabel').textContent = 'Total: R$ 0,00';
+                return;
+            }
+            ['aging0','aging30','aging60','aging90'].forEach(id => document.getElementById(id).textContent = '');
+            document.getElementById('aging0').style.width = pct(a0)+'%';
+            document.getElementById('aging30').style.width = pct(a30)+'%';
+            document.getElementById('aging60').style.width = pct(a60)+'%';
+            document.getElementById('aging90').style.width = pct(a90)+'%';
+            if (a0>0) document.getElementById('aging0').textContent = 'R$ '+fmt(a0);
+            if (a30>0) document.getElementById('aging30').textContent = 'R$ '+fmt(a30);
+            if (a60>0) document.getElementById('aging60').textContent = 'R$ '+fmt(a60);
+            if (a90>0) document.getElementById('aging90').textContent = 'R$ '+fmt(a90);
+            document.getElementById('agingTotalLabel').textContent = 'Total pendente: R$ '+fmt(total);
+        }
+
+        /* ══════════════════════════════════════
+           FILTRO / PESQUISA (CONTAS)
+           ══════════════════════════════════════ */
+        function getFilteredData() {
+            const termo = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            return contasData.filter(c => {
+                if (filtroAtual !== 'todos' && c.status.filter !== filtroAtual) return false;
+                if (termo) {
+                    if (!(c.pedido||'').toLowerCase().includes(termo) && !(c.cliente||'').toLowerCase().includes(termo)) return false;
+                }
+                return true;
+            });
+        }
+        function setFiltro(el, status) {
+            filtroAtual = status;
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            ordenarERenderizar();
+        }
+        function filtrarTabela() { ordenarERenderizar(); }
+
+        /* ══════════════════════════════════════
+           ORDENAÇÃO / RENDER (CONTAS)
+           ══════════════════════════════════════ */
+        function ordenarPor(col) {
+            if (sortCol === col) sortAsc = !sortAsc;
+            else { sortCol = col; sortAsc = true; }
+            document.querySelectorAll('#crTable th').forEach(th => {
+                th.classList.remove('sorted');
+                if (th.dataset.col === col) th.classList.add('sorted');
+            });
+            ordenarERenderizar();
+        }
+
+        function ordenarERenderizar() {
+            const dados = getFilteredData();
+            dados.sort((a,b) => {
+                let va, vb;
+                switch(sortCol) {
+                    case 'status':     va=a.status.order; vb=b.status.order; break;
+                    case 'pedido':     va=a.pedido; vb=b.pedido; break;
+                    case 'cliente':    va=(a.cliente||'').toLowerCase(); vb=(b.cliente||'').toLowerCase(); break;
+                    case 'dataPedido': va=a.dataPedido||new Date(0); vb=b.dataPedido||new Date(0); break;
+                    case 'vencimento': va=a.vencimento||new Date(0); vb=b.vencimento||new Date(0); break;
+                    case 'dias':       va=a.dias??9999; vb=b.dias??9999; break;
+                    case 'valor':      va=a.valor; vb=b.valor; break;
+                    case 'lucro':      va=a.lucro; vb=b.lucro; break;
+                    case 'formaPgto':  va=a.formaPgto; vb=b.formaPgto; break;
+                    default:           va=a.vencimento||new Date(0); vb=b.vencimento||new Date(0);
+                }
+                if (va<vb) return sortAsc?-1:1;
+                if (va>vb) return sortAsc?1:-1;
+                return 0;
+            });
+            renderContas(dados);
+        }
+
+        function renderContas(dados) {
+            const tbody = document.getElementById('crBody');
+            if (!dados.length) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:#94a3b8;font-size:11px;">Nenhum registro encontrado.</td></tr>';
+                document.getElementById('footer-count').textContent = '0 registros';
+                return;
+            }
+            let html='', totalF=0, lucroF=0;
+            dados.forEach(c => {
+                const s = c.status;
+                const rowCls = s.filter==='vencido'?' class="row-vencido"':(c.pago?' class="row-pago"':'');
+                const diasTxt = c.dias===null?'–':(c.dias<0?Math.abs(c.dias)+'d atrás':(c.dias===0?'Hoje':c.dias+'d'));
+                const diasCls = c.dias!==null&&c.dias<0?'neg':(c.dias!==null&&c.dias<=15&&!c.pago?'warn':'');
+                const lucroCls = c.lucro>=0?'pos':'neg';
+                totalF+=c.valor; lucroF+=c.lucro;
+                html += '<tr'+rowCls+'>'
+                    +'<td class="text-center"><span class="badge '+s.cls+'">'+s.icon+' '+s.label+'</span></td>'
+                    +'<td style="font-weight:500;color:#4f46e5">'+c.pedido+'</td>'
+                    +'<td>'+c.cliente+'</td>'
+                    +'<td class="text-center">'+fmtDate(c.dataPedido)+'</td>'
+                    +'<td class="text-center" style="font-weight:600">'+fmtDate(c.vencimento)+'</td>'
+                    +'<td class="text-right mono '+diasCls+'">'+diasTxt+'</td>'
+                    +'<td class="text-right mono" style="font-weight:600">'+fmt(c.valor)+'</td>'
+                    +'<td class="text-right mono '+lucroCls+'">'+fmt(c.lucro)+'</td>'
+                    +'<td class="text-center" style="font-size:10px">'+c.formaPgto+'</td>'
+                    +'<td class="text-center" onclick="event.stopPropagation()">'
+                    +'<input type="checkbox" class="pago-cb" data-id="'+c.id+'" '
+                    +(c.pago?'checked ':'')
+                    +'onchange="togglePago(this.dataset.id,this.checked)"></td></tr>';
+            });
+            tbody.innerHTML = html;
+            document.getElementById('footer-count').innerHTML = fmtInt(dados.length)+' registro'+(dados.length>1?'s':'')+' &ensp;|&ensp; Valor: R$ '+fmt(totalF)+' &ensp;|&ensp; Lucro: R$ '+fmt(lucroF);
+        }
+
+        document.querySelectorAll('#crTable th[data-col]').forEach(th => {
+            th.addEventListener('click', () => ordenarPor(th.dataset.col));
+        });
+
+        /* ══════════════════════════════════════
+           TOGGLE PAGO
+           ══════════════════════════════════════ */
+        async function togglePago(id, checked) {
+            try {
+                await window._setDoc(window._doc(window._db,'pedidos',id),{pago:checked},{merge:true});
+                const conta = contasData.find(c => c.id === id);
+                if (conta) { conta.pago = checked; conta.status = getStatusConta(conta.vencimento, checked); }
+                atualizarKPIs(); atualizarAging(); ordenarERenderizar();
+                calcularClientes();
+                showToast(checked ? '✔ Marcado como PAGO' : '✘ Desmarcado');
+            } catch(e) { showToast('Erro: '+e.message,'erro'); }
+        }
+
+        /* ══════════════════════════════════════
+           POR CLIENTE — CÁLCULO
+           ══════════════════════════════════════ */
+        function calcularClientes() {
+            const map = {};
+            contasData.forEach(c => {
+                const nome = c.cliente || '–';
+                if (!map[nome]) {
+                    map[nome] = { nome, pedidos:0, receita:0, custo:0, lucro:0, pagos:0, total:0 };
+                }
+                const m = map[nome];
+                m.pedidos++;
+                m.total++;
+                m.receita += c.valor;
+                m.custo += c.custo;
+                m.lucro += c.lucro;
+                if (c.pago) m.pagos++;
+            });
+
+            let arr = Object.values(map);
+            arr.sort((a,b) => b.receita - a.receita);
+            const totalReceita = arr.reduce((s,c) => s + c.receita, 0);
+            let acumulado = 0;
+
+            clientesData = arr.map((c, i) => {
+                c.rank = i + 1;
+                c.margem = c.receita > 0 ? (c.lucro / c.receita) * 100 : 0;
+                c.ticket = c.pedidos > 0 ? c.receita / c.pedidos : 0;
+                c.pctPago = c.total > 0 ? (c.pagos / c.total) * 100 : 0;
+                const pctInd = totalReceita > 0 ? (c.receita / totalReceita) * 100 : 0;
+                acumulado += pctInd;
+                if (acumulado <= 80) c.classe = 'A';
+                else if (acumulado <= 95) c.classe = 'B';
+                else c.classe = 'C';
+                c.pctAcum = acumulado;
+                return c;
+            });
+
+            if (activeTab === 'clientes') renderClientes();
+        }
+
+        /* ══════════════════════════════════════
+           POR CLIENTE — RENDER
+           ══════════════════════════════════════ */
+        function renderClientes() {
+            const countA = clientesData.filter(c => c.classe === 'A').length;
+            const countB = clientesData.filter(c => c.classe === 'B').length;
+            const countC = clientesData.filter(c => c.classe === 'C').length;
+            const recA = clientesData.filter(c => c.classe === 'A').reduce((s,c) => s + c.receita, 0);
+            const recB = clientesData.filter(c => c.classe === 'B').reduce((s,c) => s + c.receita, 0);
+            const recC = clientesData.filter(c => c.classe === 'C').reduce((s,c) => s + c.receita, 0);
+            const totalRec = recA + recB + recC;
+            const totalLucro = clientesData.reduce((s,c) => s + c.lucro, 0);
+            const totalPedidos = clientesData.reduce((s,c) => s + c.pedidos, 0);
+            const ticketGeral = totalPedidos > 0 ? totalRec / totalPedidos : 0;
+
+            // KPIs
+            document.getElementById('cli-total').textContent = fmtInt(clientesData.length);
+            document.getElementById('cli-receita').textContent = fmt(totalRec);
+            const elLucro = document.getElementById('cli-lucro');
+            elLucro.textContent = fmt(totalLucro);
+            elLucro.className = 'card-val ' + (totalLucro >= 0 ? 'pos' : 'neg');
+            document.getElementById('cli-ticket').textContent = fmt(ticketGeral);
+            document.getElementById('cli-top').textContent = clientesData.length > 0 ? clientesData[0].nome : '–';
+
+            // Pareto bar
+            const pct = v => Math.max(v > 0 ? 8 : 0, totalRec > 0 ? (v / totalRec) * 100 : 0);
+            document.getElementById('cli-pareto-a').style.width = pct(recA) + '%';
+            document.getElementById('cli-pareto-b').style.width = pct(recB) + '%';
+            document.getElementById('cli-pareto-c').style.width = pct(recC) + '%';
+            document.getElementById('cli-pareto-a').textContent = recA > 0 ? 'A: '+countA+' cliente'+(countA>1?'s':'') : '';
+            document.getElementById('cli-pareto-b').textContent = recB > 0 ? 'B: '+countB+' cliente'+(countB>1?'s':'') : '';
+            document.getElementById('cli-pareto-c').textContent = recC > 0 ? 'C: '+countC+' cliente'+(countC>1?'s':'') : '';
+            document.getElementById('cliParetoLabel').textContent = 'Receita total: R$ ' + fmt(totalRec);
+
+            // Table
+            const tbody = document.getElementById('cliBody');
+            if (!clientesData.length) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:#94a3b8">Nenhum cliente encontrado.</td></tr>';
+            } else {
+                let html = '';
+                clientesData.forEach(c => {
+                    const badgeCls = c.classe==='A'?'badge-a':(c.classe==='B'?'badge-b':'badge-c');
+                    const lucroCls = c.lucro >= 0 ? 'pos' : 'neg';
+                    const mgCls = c.margem >= 0 ? 'pos' : 'neg';
+                    const pagoCls = c.pctPago >= 80 ? 'pos' : (c.pctPago >= 50 ? 'warn' : 'neg');
+                    html += '<tr>'
+                        +'<td class="text-center mono" style="color:#94a3b8">'+c.rank+'</td>'
+                        +'<td style="font-weight:500">'+c.nome+'</td>'
+                        +'<td class="text-right mono">'+fmtInt(c.pedidos)+'</td>'
+                        +'<td class="text-right mono" style="font-weight:600">'+fmt(c.receita)+'</td>'
+                        +'<td class="text-right mono">'+fmt(c.custo)+'</td>'
+                        +'<td class="text-right mono '+lucroCls+'">'+fmt(c.lucro)+'</td>'
+                        +'<td class="text-right mono '+mgCls+'">'+fmt(c.margem)+'%</td>'
+                        +'<td class="text-right mono">'+fmt(c.ticket)+'</td>'
+                        +'<td class="text-right mono '+pagoCls+'">'+fmt(c.pctPago)+'%</td>'
+                        +'<td class="text-center"><span class="'+badgeCls+'">'+c.classe+'</span></td>'
+                        +'</tr>';
+                });
+                tbody.innerHTML = html;
+            }
+
+            // Client table sorting
+            document.querySelectorAll('#cliTable th[data-col2]').forEach(th => {
+                th.onclick = () => ordenarClientes(th.dataset.col2);
+            });
+
+            // Insight
+            const totalCli = clientesData.length;
+            const pctCliA = totalCli > 0 ? ((countA / totalCli) * 100).toFixed(0) : 0;
+            const pctRecA = totalRec > 0 ? ((recA / totalRec) * 100).toFixed(0) : 0;
+            document.getElementById('cliInsight').innerHTML =
+                '<strong>\u{1F4CA} Análise de Rentabilidade:</strong> '
+                + 'Dos <strong>'+totalCli+' clientes</strong>, apenas <strong>'+countA+' ('+pctCliA+'%)</strong> '
+                + 'são responsáveis por <strong>'+pctRecA+'% da receita total</strong> (Classe A). '
+                + 'Estes clientes devem receber <strong>atendimento prioritário</strong>, condições especiais e acompanhamento próximo. '
+                + '<br><br>'
+                + 'Os <strong>'+countC+' clientes da Classe C</strong> contribuem com uma fração mínima do faturamento. '
+                + 'Avalie se o custo de atendimento justifica a receita gerada — considere <strong>estratégias de ativação</strong> ou <strong>aumento de ticket</strong>.';
+        }
+
+        /* ══════════════════════════════════════
+           ORDENAÇÃO (CLIENTES)
+           ══════════════════════════════════════ */
+        function ordenarClientes(col) {
+            if (sortCol2 === col) sortAsc2 = !sortAsc2;
+            else { sortCol2 = col; sortAsc2 = col === 'nome'; }
+            clientesData.sort((a,b) => {
+                let va, vb;
+                switch(col) {
+                    case 'nome':    va=(a.nome||'').toLowerCase(); vb=(b.nome||'').toLowerCase(); break;
+                    case 'pedidos': va=a.pedidos; vb=b.pedidos; break;
+                    case 'receita': va=a.receita; vb=b.receita; break;
+                    case 'custo':   va=a.custo; vb=b.custo; break;
+                    case 'lucro':   va=a.lucro; vb=b.lucro; break;
+                    case 'margem':  va=a.margem; vb=b.margem; break;
+                    case 'ticket':  va=a.ticket; vb=b.ticket; break;
+                    case 'pctPago': va=a.pctPago; vb=b.pctPago; break;
+                    default:        va=a.receita; vb=b.receita;
+                }
+                if (va<vb) return sortAsc2?-1:1;
+                if (va>vb) return sortAsc2?1:-1;
+                return 0;
+            });
+            clientesData.forEach((c,i) => c.rank = i+1);
+            renderClientes();
+        }
+
+        /* ══════════════════════════════════════
+           SAIR DO MÓDULO
+           ══════════════════════════════════════ */
+        function sairDoModulo() {
+            try {
+                var p = window.parent;
+                if (p && p !== window && p.document) {
+                    p.document.querySelectorAll('.nav-group.open').forEach(function(g) { g.classList.remove('open'); });
+                    p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(function(a) { a.classList.remove('active'); });
+                    var frame = p.document.getElementById('content-frame');
+                    if (frame) frame.src = 'M00_Dashboard.html';
+                    var title = p.document.getElementById('page-title');
+                    if (title) title.innerText = 'Dashboard';
+                    var navLinks = p.document.querySelectorAll('nav a[onclick]');
+                    for (var i = 0; i < navLinks.length; i++) {
+                        var oc = navLinks[i].getAttribute('onclick') || '';
+                        if (oc.indexOf('Dashboard') !== -1) {
+                            navLinks[i].classList.add('active'); break;
+                        }
+                    }
+                    return;
+                }
+            } catch(e) {}
+            window.location.href = 'M00_Dashboard.html';
+        }
+
+        /* ══════════════════════════════════════
+           INICIALIZAÇÃO
+           ══════════════════════════════════════ */
+        function init() {
+            if (window._fbReady) { carregarContas(); }
+            else { window.addEventListener('firebase-ready', () => carregarContas()); }
+        }
+        init();
+    </script>
+</body>
+</html>

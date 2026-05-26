@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SILFER’S Smart Cost | Gestão de Custos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
+        .tab-active { background: white; border: 1px solid #e2e8f0; border-bottom: none; color: #4f46e5; margin-bottom: -1px; z-index: 10; }
+        .tab-inactive { background: #f1f5f9; border: 1px solid transparent; color: #94a3b8; }
+        .sort-icon { display: inline-block; width: 10px; height: 10px; margin-left: 4px; opacity: 0.4; vertical-align: middle; }
+        /* ── Padrão de tabela idêntico ao M1 ── */
+        table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        th, td { height: 20px; padding: 0 10px; font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 400; white-space: nowrap; line-height: 20px; border: none; }
+        td { border-bottom: 1px solid #f8fafc; color: #334155; }
+        th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 600; text-align: left; cursor: pointer; }
+        th:hover { background-color: #f1f5f9; }
+        tbody tr:hover td { background-color: #f1f5f9 !important; }
+        .overflow-x-auto { border: 1px solid #e2e8f0; border-radius:0; overflow: auto; }
+        .divide-y > tbody > tr { border: none; }
+    
+        /* TOP BAR */
+        .top-bar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #f8fafc; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;
+        }
+        .top-bar h1 { font-size: 12px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+        .btn-exit {
+            background: none; border: 1.5px solid #94a3b8; color: #94a3b8; border-radius: 0;
+            padding: 5px 14px; font-size: 10px; font-weight: 400; cursor: pointer;
+            text-transform: uppercase; letter-spacing: .06em; transition: all .2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-exit:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.08); }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="margin:0;padding:0;display:flex;flex-direction:column;height:100vh;overflow:hidden;">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <h1><i class="fas fa-file-import" style="font-size:13px;margin-right:8px;opacity:.7;"></i> Importação de Notas Fiscais</h1>
+        <button class="btn-exit" onclick="sairDoModulo()">&#10005; Sair</button>
+    </div>
+
+    <div id="m2ContentWrapper" style="flex:1;overflow-y:auto;padding:16px 24px;">
+
+
+    <main class="max-w-[1600px] mx-auto">
+        
+                <header class="mb-6 flex items-center gap-3">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="globalSearch" placeholder="Pesquisar por descrição ou código..."
+                    class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-none text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white shadow-sm">
+            </div>
+            <label class="cursor-pointer bg-white text-slate-500 px-4 py-2.5 rounded-none border border-slate-200 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-all flex items-center gap-2 text-xs font-semibold shrink-0 shadow-sm">
+                <i data-lucide="file-up" class="w-4 h-4"></i> Importar XML
+                <input id="xmlInput" type="file" accept=".xml" class="hidden" />
+            </label>
+            <button id="btn-salvar-bd" onclick="salvarNoBD()"
+                class="hidden cursor-pointer bg-white text-slate-500 px-4 py-2.5 rounded-none border border-slate-200 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-600 transition-all flex items-center gap-2 text-xs font-semibold shrink-0 shadow-sm">
+                <i data-lucide="database" class="w-4 h-4"></i> Salvar no BD
+            </button>
+        </header>
+
+        <div id="summaryCards" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white p-5 rounded-none border border-slate-200 shadow-sm">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Total Itens (Produtos)</span>
+                <span id="totalBruto" class="text-xl text-slate-800 font-mono">R$ 0,00</span>
+            </div>
+            <div class="bg-white p-5 rounded-none border border-slate-200 shadow-sm">
+                <span class="text-[10px] font-bold text-orange-500 uppercase block mb-1">Impostos/Taxas</span>
+                <span id="totalDiferenca" class="text-xl text-orange-600 font-mono">R$ 0,00</span>
+            </div>
+            <div class="bg-white p-5 rounded-none border border-slate-200 shadow-sm">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Base ICMS</span>
+                <span id="totalBC" class="text-xl text-slate-800 font-mono">R$ 0,00</span>
+            </div>
+            <div class="bg-white p-5 rounded-none border border-slate-200 shadow-sm">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Total Nota (VNF)</span>
+                <span id="totalNF" class="text-xl text-slate-800 font-mono">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div id="mainContent" class="hidden">
+            <div class="flex gap-1 ml-2">
+                <button onclick="switchTab('danfe')" id="btn-danfe" class="px-5 py-2.5 rounded-t-none text-[10px] font-bold transition-all tab-active uppercase tracking-widest">Dados da NF</button>
+                <button onclick="switchTab('custo')" id="btn-custo" class="px-5 py-2.5 rounded-t-none text-[10px] font-bold transition-all tab-inactive uppercase tracking-widest">Custo Real</button>
+                <button onclick="switchTab('preco')" id="btn-preco" class="px-5 py-2.5 rounded-t-none text-[10px] font-bold transition-all tab-inactive uppercase tracking-widest">Precificação</button>
+            </div>
+
+            <div class="bg-white rounded-none rounded-tl-none border border-slate-200 shadow-sm overflow-hidden p-1">
+                <div id="tab-danfe-content" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border p-4 rounded-none bg-white shadow-sm border-slate-100">
+                            <h3 class="text-[10px] font-black border-b pb-2 mb-3 uppercase text-slate-400 tracking-widest">Emitente</h3>
+                            <p id="emiNome" class="text-slate-800 italic uppercase"></p>
+                            <p id="emiDoc" class="text-[11px] text-slate-500"></p>
+                        </div>
+                        <div class="border p-4 rounded-none bg-white shadow-sm border-slate-100">
+                            <h3 class="text-[10px] font-black border-b pb-2 mb-3 uppercase text-slate-400 tracking-widest">Destinatário</h3>
+                            <p id="destNome" class="text-slate-800 italic uppercase"></p>
+                            <p id="destDoc" class="text-[11px] text-slate-500"></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border p-4 rounded-none bg-slate-50/50">
+                            <h3 class="text-[10px] font-black border-b pb-2 mb-3 uppercase text-slate-400 tracking-widest">Informações Fiscais</h3>
+                            <div class="space-y-2 text-xs">
+                                <p><span class="text-slate-500">Chave:</span> <span id="nfChave" class="font-mono"></span></p>
+                                <p><span class="text-slate-500">Número/Série:</span> <span id="nfNum"></span></p>
+                                <p><span class="text-slate-500">Emissão:</span> <span id="nfData"></span></p>
+                            </div>
+                        </div>
+                        <div class="border p-4 rounded-none bg-indigo-50/30 border-indigo-100">
+                            <h3 class="text-[10px] font-black border-b border-indigo-100 pb-2 mb-3 uppercase text-indigo-400 tracking-widest">Dados de Cobrança (Boleto)</h3>
+                            <div class="space-y-2 text-xs">
+                                <p><span class="text-indigo-900">Vencimento:</span> <span id="bolVenc" class="text-red-600 bg-white px-2 py-0.5 rounded-none border border-red-100"></span></p>
+                                <p><span class="text-indigo-900">Valor do Título:</span> <span id="bolValor" class="font-mono"></span></p>
+                                <p><span class="text-indigo-900">Número da Fatura:</span> <span id="bolFat" class="text-slate-600"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-custo-content" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[10px] font-mono">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('codigo')">CÓD <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('descricao')">DESCRIÇÃO <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('ncm')">NCM <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('und')">UND <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('qtd')">QTD <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('vUnOrig')" style="text-align:right">V. UNIT NF <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('vBruto')" style="text-align:right">TOTAL <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('vST')" style="text-align:right">V. ST DIRETO <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('vRateio')" style="text-align:right">RATEIO PROPORC. <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('custoEfetivoUnit')" style="text-align:right;color:#4f46e5;background:#f1f5f9">NOVO V. UNITÁRIO <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('custoTotalFinal')" style="text-align:right">CUSTO TOTAL FINAL <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-custo" class="divide-y divide-slate-100 text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tab-preco-content" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[10px] font-mono">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('codigo')">Cód <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('descricao')">Descrição <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('qtd')" style="text-align:center">Qtd <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('custoEfetivoUnit')" style="text-align:right">Custo Efetivo <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('precoSugerido')" style="text-align:right;color:#ef4444">Sugerido (20%) <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('precoArbitrado')" style="text-align:right;color:#4f46e5">Preço Venda (NF) <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('mgLucro')" style="text-align:center">MG% <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('lucroUnit')" style="text-align:right;color:#059669">Lucro Bruto (NF) <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('vendaTotalNF')" style="text-align:right">Venda Total <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                    <th onclick="sortTable('lucroTotal')" style="text-align:right;color:#dc2626">Lucro Total (TP) <i data-lucide="arrow-up-down" class="sort-icon"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-preco" class="divide-y divide-slate-100 text-slate-600"></tbody>
+            <tfoot id="tabela-preco-foot"></tfoot>
+                        </table>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid #f1f5f9;background:#fafafa;border-radius:0;">
+                        <span style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap;">Aplicar margem a todos:</span>
+                        <div style="position:relative;width:110px;">
+                            <input id="mg-global" type="number" step="0.1" min="0" placeholder="ex: 70"
+                                style="width:100%;padding:7px 28px 7px 10px;border:1.5px solid #e2e8f0;border-radius:0;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box;"
+                                onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'"
+                                onkeydown="if(event.key==='Enter') aplicarMgGlobal()">
+                            <span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;pointer-events:none;">%</span>
+                        </div>
+                        <button onclick="aplicarMgGlobal()"
+                            style="padding:7px 16px;background:#4f46e5;color:white;border:none;border-radius:0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s;"
+                            onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+                            Aplicar a todos
+                        </button>
+                        <span id="mg-global-info" style="font-size:10px;color:#94a3b8;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="py-40 text-center text-slate-300">
+            <i data-lucide="file-text" class="w-20 h-20 mx-auto mb-4 opacity-10"></i>
+            <p class="font-medium tracking-tight">Importe o arquivo XML para iniciar.</p>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        let allProducts = [];
+        let sortConfig = { key: 'descricao', direction: 'asc' };
+
+        function _filteredIdx(p) {
+            const term = document.getElementById('globalSearch').value.toLowerCase();
+            const filtered = allProducts.filter(x => x.descricao.toLowerCase().includes(term) || x.codigo.includes(term));
+            return filtered.indexOf(p);
+        }
+
+        (function restoreSession() {
+            try {
+                const saved = sessionStorage.getItem('silfers_m2_data');
+                const nf    = sessionStorage.getItem('silfers_m2_nf');
+                if (!saved) return;
+                allProducts = JSON.parse(saved);
+                if (nf) {
+                    const n = JSON.parse(nf);
+                    document.getElementById('nfNum').innerText   = n.nfNum   || '';
+                    document.getElementById('nfData').innerText  = n.nfData  || '';
+                    document.getElementById('nfChave').innerText = n.nfChave || '';
+                    document.getElementById('bolFat').innerText  = n.bolFat  || '';
+                    document.getElementById('bolVenc').innerText  = n.bolVenc  || '';
+                    document.getElementById('bolValor').innerText = n.bolValor || '';
+                    document.getElementById('emiNome').innerText  = n.emiNome  || '';
+                    document.getElementById('emiDoc').innerText   = n.emiDoc   || '';
+                    document.getElementById('destNome').innerText = n.destNome || '';
+                    document.getElementById('destDoc').innerText  = n.destDoc  || '';
+                }
+                document.getElementById('mainContent').classList.remove('hidden');
+                document.getElementById('summaryCards').classList.remove('hidden');
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('btn-salvar-bd').classList.remove('hidden');
+                renderTables();
+            } catch(e) {}
+        })();
+
+        const fmt = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtNoCur = (v) => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        const formatXmlDate = (dateStr) => {
+            if (!dateStr) return null;
+            return dateStr.split('T')[0].split('-').reverse().join('/');
+        };
+
+        function switchTab(tab) {
+            ['danfe', 'custo', 'preco'].forEach(t => {
+                document.getElementById(`tab-${t}-content`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).className = `px-5 py-2.5 rounded-t-none text-[10px] font-bold transition-all uppercase tracking-widest ${t === tab ? 'tab-active' : 'tab-inactive'}`;
+            });
+            document.getElementById(`tab-${tab}-content`).classList.remove('hidden');
+        }
+
+        document.getElementById('xmlInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                await processXML(event.target.result);
+                // Exibe o botão SALVAR NO BD após processar
+                setTimeout(() => {
+                    if (allProducts.length > 0) {
+                        const btn = document.getElementById('btn-salvar-bd');
+                        btn.classList.remove('hidden');
+                        btn.disabled  = false;
+                        btn.innerHTML = '<i data-lucide="database" class="w-4 h-4"></i> SALVAR NO BD';
+                        lucide.createIcons();
+                    }
+                }, 200);
+            };
+            reader.readAsText(file);
+        });
+
+        async function processXML(xmlString) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlString, "text/xml");
+            const get = (tag, parent = xml) => {
+                const el = parent.getElementsByTagName(tag)[0];
+                return el ? el.textContent : '';
+            };
+
+            document.getElementById('emiNome').innerText = get('xNome', xml.getElementsByTagName('emit')[0]);
+            document.getElementById('emiDoc').innerText = 'CNPJ: ' + get('CNPJ', xml.getElementsByTagName('emit')[0]);
+            document.getElementById('destNome').innerText = get('xNome', xml.getElementsByTagName('dest')[0]);
+            document.getElementById('destDoc').innerText = 'CPF/CNPJ: ' + (get('CPF', xml.getElementsByTagName('dest')[0]) || get('CNPJ', xml.getElementsByTagName('dest')[0]));
+            
+            const nfeInfo = xml.getElementsByTagName('ide')[0];
+            const dhEmi = get('dhEmi', nfeInfo) || get('dEmi', nfeInfo);
+            window._emissaoAtual = dhEmi ? dhEmi.split('T')[0] : null; // YYYY-MM-DD
+            document.getElementById('nfChave').innerText = get('chNFe') || 'Ver Portal';
+            document.getElementById('nfNum').innerText = `${get('nNF', nfeInfo)} / ${get('serie', nfeInfo)}`;
+            document.getElementById('nfData').innerText = formatXmlDate(dhEmi) || '--';
+
+            const totalTag = xml.getElementsByTagName('total')[0];
+            const vNF = parseFloat(get('vNF', totalTag) || 0);
+            
+            // Lógica de Cobrança (Fatura e Vencimento)
+            const faturaTag = xml.getElementsByTagName('fat')[0];
+            document.getElementById('bolFat').innerText = get('nFat', faturaTag) || get('nNF', nfeInfo) || 'N/A';
+
+            const dup = xml.getElementsByTagName('dup')[0];
+            if (dup && get('vVenc', dup)) {
+                document.getElementById('bolVenc').innerText = formatXmlDate(get('vVenc', dup));
+                document.getElementById('bolValor').innerText = fmt(parseFloat(get('vDup', dup) || 0));
+            } else if (dhEmi) {
+                const dataBase = dhEmi.split('T')[0].split('-');
+                const venc = new Date(dataBase[0], dataBase[1]-1, dataBase[2]);
+                venc.setDate(venc.getDate() + 28);
+                document.getElementById('bolVenc').innerText = venc.toLocaleDateString('pt-BR');
+                document.getElementById('bolValor').innerText = fmt(vNF);
+            } else {
+                document.getElementById('bolVenc').innerText = 'À VISTA';
+                document.getElementById('bolValor').innerText = fmt(vNF);
+            }
+
+            const dets = xml.getElementsByTagName('det');
+            let somaBruta = 0, temp = [];
+
+            Array.from(dets).forEach(det => {
+                const prod = det.getElementsByTagName('prod')[0];
+                const icms = det.getElementsByTagName('ICMS')[0];
+                const vProd = parseFloat(get('vProd', prod) || 0);
+                somaBruta += vProd;
+                temp.push({
+                    codigo: get('cProd', prod),
+                    descricao: get('xProd', prod),
+                    ncm: get('NCM', prod),
+                    und: get('uCom', prod),
+                    qtd: parseFloat(get('qCom', prod) || 0),
+                    vUnOrig: parseFloat(get('vUnCom', prod) || 0),
+                    vBruto: vProd,
+                    vST: parseFloat(get('vICMSST', icms) || 0)
+                });
+            });
+
+            const diferencaTotal = vNF - somaBruta;
+            let acumuladoRateio = 0;
+
+            /* ══ Arbitragem Inteligente: busca histórico no BD ══ */
+            const _historico = {};
+            if (window._fbReady) {
+                const codigosUnicos = [...new Set(temp.map(p => p.codigo))];
+                for (const _cod of codigosUnicos) {
+                    try {
+                        const _q = window._query(
+                            window._collection(window._db, 'produtos'),
+                            window._where('cod', '==', _cod)
+                        );
+                        const _snap = await window._getDocs(_q);
+                        if (!_snap.empty) {
+                            const _docs = _snap.docs.map(d => d.data());
+                            _docs.sort((a, b) => (b.emissao || b.data || '').localeCompare(a.emissao || a.data || ''));
+                            const _ultimo = _docs[0];
+                            if (_ultimo.precoArb != null && _ultimo.mgLucro != null) {
+                                _historico[_cod] = { precoArb: _ultimo.precoArb, mgLucro: _ultimo.mgLucro };
+                            }
+                        }
+                    } catch(e) { /* silently skip */ }
+                }
+            }
+
+            allProducts = temp.map((p, index) => {
+                let ajuste = (index === temp.length - 1) ? (diferencaTotal - acumuladoRateio) : Math.round((p.vBruto / somaBruta) * diferencaTotal * 100) / 100;
+                acumuladoRateio += ajuste;
+                const custoTotalFinal = p.vBruto + ajuste;
+                const novoVUnit = Math.round((custoTotalFinal / p.qtd) * 100) / 100;
+
+                /* Arbitragem inteligente por histórico */
+                let pArbitrado;
+                const _hist = _historico[p.codigo];
+                if (_hist) {
+                    const margemSimulada = novoVUnit > 0 ? (_hist.precoArb - novoVUnit) / novoVUnit : 0;
+                    if (margemSimulada < _hist.mgLucro) {
+                        /* Custo subiu → margem encolheu → restaurar margem histórica */
+                        pArbitrado = novoVUnit * (1 + _hist.mgLucro);
+                    } else {
+                        /* Custo caiu ou estável → manter preço arbitrado anterior */
+                        pArbitrado = _hist.precoArb;
+                    }
+                } else {
+                    /* Sem histórico → fallback 60% */
+                    pArbitrado = novoVUnit * 1.60;
+                }
+                
+                return { 
+                    ...p, 
+                    vRateio: ajuste, 
+                    custoTotalFinal: Math.round((novoVUnit * p.qtd) * 100) / 100, 
+                    custoEfetivoUnit: novoVUnit, 
+                    precoSugerido: novoVUnit * 1.20, 
+                    precoArbitrado: pArbitrado,
+                    lucroUnit: pArbitrado - novoVUnit, 
+                    mgLucro: (pArbitrado - novoVUnit) / novoVUnit,
+                    vendaTotalNF: pArbitrado * p.qtd,
+                    lucroTotal: (pArbitrado - novoVUnit) * p.qtd
+                };
+            });
+
+            document.getElementById('totalBruto').innerText = fmt(somaBruta);
+            document.getElementById('totalDiferenca').innerText = fmt(diferencaTotal);
+            document.getElementById('totalBC').innerText = fmt(parseFloat(get('vBC', totalTag) || 0));
+            document.getElementById('totalNF').innerText = fmt(vNF);
+
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('summaryCards').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            renderTables();
+            try {
+                sessionStorage.setItem('silfers_m2_data', JSON.stringify(allProducts));
+                sessionStorage.setItem('silfers_m2_nf', JSON.stringify({
+                    nfNum:    document.getElementById('nfNum').innerText,
+                    nfData:   document.getElementById('nfData').innerText,
+                    nfChave:  document.getElementById('nfChave').innerText,
+                    bolFat:   document.getElementById('bolFat').innerText,
+                    bolVenc:  document.getElementById('bolVenc').innerText,
+                    bolValor: document.getElementById('bolValor').innerText,
+                    emiNome:  document.getElementById('emiNome').innerText,
+                    emiDoc:   document.getElementById('emiDoc').innerText,
+                    destNome: document.getElementById('destNome').innerText,
+                    destDoc:  document.getElementById('destDoc').innerText
+                }));
+            } catch(e) {}
+        }
+
+        function sortTable(key) {
+            if (sortConfig.key === key) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.key = key;
+                sortConfig.direction = 'asc';
+            }
+            allProducts.sort((a, b) => {
+                let valA = a[key], valB = b[key];
+                if (typeof valA === 'string') {
+                    return sortConfig.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }
+                return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+            });
+            renderTables();
+        }
+
+        function renderTables() {
+            const term = document.getElementById('globalSearch').value.toLowerCase();
+            const filtered = allProducts.filter(p => p.descricao.toLowerCase().includes(term) || p.codigo.includes(term));
+
+            document.getElementById('tabela-custo').innerHTML = filtered.map(p => `
+                <tr>
+                    <td>${p.codigo}</td>
+                    <td style="text-transform:uppercase">${p.descricao}</td>
+                    <td>${p.ncm}</td>
+                    <td>${p.und}</td>
+                    <td style="text-align:right">${p.qtd}</td>
+                    <td style="text-align:right">${fmt(p.vUnOrig)}</td>
+                    <td style="text-align:right">${fmt(p.vBruto)}</td>
+                    <td style="text-align:right">${fmt(p.vST)}</td>
+                    <td style="text-align:right">${fmt(p.vRateio - p.vST)}</td>
+                    <td style="text-align:right;color:#4f46e5;background:#f1f5f9">${fmt(p.custoEfetivoUnit)}</td>
+                    <td style="text-align:right">${fmt(p.custoTotalFinal)}</td>
+                </tr>`).join('');
+
+            document.getElementById('tabela-preco').innerHTML = filtered.map(p => `
+                <tr>
+                    <td>${p.codigo}</td>
+                    <td style="text-transform:uppercase">${p.descricao}</td>
+                    <td style="text-align:center">${p.qtd}</td>
+                    <td style="text-align:right">${fmtNoCur(p.custoEfetivoUnit)}</td>
+                    <td style="text-align:right;color:#ef4444;font-style:italic">${fmtNoCur(p.precoSugerido)}</td>
+                    <td style="text-align:right;color:#4f46e5">${fmtNoCur(p.precoArbitrado)}</td>
+                    <td style="text-align:center">${(p.mgLucro*100).toFixed(2)}%</td>
+                    <td style="text-align:right;color:#059669">${fmtNoCur(p.lucroUnit)}</td>
+                    <td style="text-align:right">${fmtNoCur(p.vendaTotalNF)}</td>
+                    <td style="text-align:right;color:#dc2626">${fmtNoCur(p.lucroTotal)}</td>
+                    <td style="padding:0 6px;text-align:center;">
+                        <button onclick="abrirModal(${_filteredIdx(p)})" title="Arbitrar preço"
+                            style="background:none;border:1px solid #cbd5e1;border-radius:0;padding:3px 6px;cursor:pointer;color:#94a3b8;line-height:1;transition:all .15s;"
+                            onmouseover="this.style.borderColor='#6366f1';this.style.color='#6366f1';this.style.background='#eef2ff';"
+                            onmouseout="this.style.borderColor='#cbd5e1';this.style.color='#94a3b8';this.style.background='none';">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                        </button>
+                    </td>
+                </tr>`).join('');
+        // === Totais da aba Precificação ===
+        const _tMG = filtered.length > 0 ? (filtered.reduce((s, p) => s + (p.mgLucro || 0), 0) / filtered.length * 100) : 0;
+        const _tVT = filtered.reduce((s, p) => s + (p.vendaTotalNF || 0), 0);
+        const _tLT = filtered.reduce((s, p) => s + (p.lucroTotal || 0), 0);
+        document.getElementById('tabela-preco-foot').innerHTML = `
+            <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700;font-size:11px;">
+                <td></td>
+                <td style="text-transform:uppercase;color:#64748b;font-size:10px;font-weight:800;">TOTAL</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td style="text-align:center;color:#64748b;">${_tMG.toFixed(2)}% <span style="font-weight:400;font-size:9px;color:#94a3b8;">(Margem Média)</span></td>
+                <td></td>
+                <td style="text-align:right">${fmtNoCur(_tVT)}</td>
+                <td style="text-align:right;color:#dc2626">${fmtNoCur(_tLT)}</td>
+                <td></td>
+            </tr>`;
+            lucide.createIcons();
+        }
+
+        document.getElementById('globalSearch').addEventListener('input', renderTables);
+
+        function aplicarMgGlobal() {
+            const mgPct = parseFloat(document.getElementById('mg-global').value);
+            const info  = document.getElementById('mg-global-info');
+            if (isNaN(mgPct) || mgPct <= 0) {
+                info.style.color = '#dc2626';
+                info.textContent = 'Digite uma margem válida.';
+                return;
+            }
+            const mg = mgPct / 100;
+            const r  = v => Math.round(v * 100) / 100;
+            allProducts.forEach(p => {
+                const novoPreco  = r(p.custoEfetivoUnit * (1 + mg));
+                p.precoArbitrado = novoPreco;
+                p.mgLucro        = mg;
+                p.lucroUnit      = r(novoPreco - p.custoEfetivoUnit);
+                p.vendaTotalNF   = r(novoPreco * p.qtd);
+                p.lucroTotal     = r(p.lucroUnit * p.qtd);
+            });
+            try { sessionStorage.setItem('silfers_m2_data', JSON.stringify(allProducts)); } catch(e) {}
+            renderTables();
+            info.style.color = '#16a34a';
+            info.textContent = `✓ ${mgPct.toFixed(1)}% aplicado a ${allProducts.length} produtos.`;
+            setTimeout(() => { info.textContent = ''; }, 4000);
+        }
+
+        let _modalIdx = null;
+
+        function abrirModal(filteredIdx) {
+            const term = document.getElementById('globalSearch').value.toLowerCase();
+            const filtered = allProducts.filter(p => p.descricao.toLowerCase().includes(term) || p.codigo.includes(term));
+            const p = filtered[filteredIdx];
+            if (!p) return;
+            _modalIdx = allProducts.indexOf(p);
+
+            document.getElementById('modal-dados').innerHTML = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0;padding:12px 16px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Código</div>
+                    <div style="font-size:15px;font-weight:700;color:#1e293b;">${p.codigo}</div>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0;padding:12px 16px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Descrição</div>
+                    <div style="font-size:11px;font-weight:600;color:#1e293b;text-transform:uppercase;line-height:1.4;">${p.descricao}</div>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0;padding:12px 16px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Compra</div>
+                    <div style="font-size:15px;font-weight:700;color:#1e293b;">${fmt(p.custoEfetivoUnit)}</div>
+                </div>
+                <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:0;padding:12px 16px;">
+                    <div style="font-size:9px;color:#6366f1;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Venda (20%)</div>
+                    <div style="font-size:15px;font-weight:700;color:#4f46e5;">${fmt(p.precoSugerido)}</div>
+                </div>`;
+
+            // mgLucro é decimal (0.70 = 70%)
+            document.getElementById('edit-preco').value = p.precoArbitrado.toFixed(2);
+            document.getElementById('edit-mg').value    = (p.mgLucro * 100).toFixed(2);
+            atualizaIndicador(p.mgLucro);
+
+            carregarHistorico(p.codigo);
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            _modalIdx = null;
+        }
+
+        function recalcMgFromPreco() {
+            const p     = allProducts[_modalIdx];
+            const preco = parseFloat(document.getElementById('edit-preco').value) || 0;
+            const mg    = p.custoEfetivoUnit > 0 ? (preco - p.custoEfetivoUnit) / p.custoEfetivoUnit : 0;
+            document.getElementById('edit-mg').value = (mg * 100).toFixed(2);
+            atualizaIndicador(mg);
+        }
+
+        function recalcPrecoFromMg() {
+            const p   = allProducts[_modalIdx];
+            const mg  = (parseFloat(document.getElementById('edit-mg').value) || 0) / 100;
+            document.getElementById('edit-preco').value = (p.custoEfetivoUnit * (1 + mg)).toFixed(2);
+            atualizaIndicador(mg);
+        }
+
+        function atualizaIndicador(mg) {
+            const el = document.getElementById('mg-indicator');
+            if (mg >= 0.3)      { el.style.background='#dcfce7'; el.style.color='#16a34a'; el.textContent='Saudável ✓'; }
+            else if (mg >= 0.1) { el.style.background='#fef9c3'; el.style.color='#ca8a04'; el.textContent='Atenção ⚠'; }
+            else                { el.style.background='#fee2e2'; el.style.color='#dc2626'; el.textContent='Crítica ✕'; }
+        }
+
+        async function carregarHistorico(codigo) {
+            const div = document.getElementById('modal-historico');
+            div.innerHTML = '<div style="color:#cbd5e1;font-size:11px;padding:8px;">Carregando...</div>';
+            try {
+                const q    = window._query(window._collection(window._db, 'produtos'), window._where('cod', '==', String(codigo)));
+                const snap = await window._getDocs(q);
+                if (snap.empty) { div.innerHTML = '<div style="color:#cbd5e1;font-size:11px;padding:8px;">Nenhum registro encontrado.</div>'; return; }
+                const rows = snap.docs.map(d => d.data()).slice(0, 15);
+                const media = rows.reduce((a,r) => a + (r.precoArb||0), 0) / rows.length;
+                const fmtR = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+                div.innerHTML = `<div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                        <thead><tr style="background:#f8fafc;">
+                            <th style="padding:5px 7px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Doc Entrada</th>
+                            <th style="padding:5px 7px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Emissão</th>
+                            <th style="padding:5px 7px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Dt Entrada</th>
+                            <th style="padding:5px 7px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;">Cód</th>
+                            <th style="padding:5px 7px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;min-width:200px;">Descrição</th>
+                            <th style="padding:5px 7px;text-align:right;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Compra</th>
+                            <th style="padding:5px 7px;text-align:right;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Venda (20%)</th>
+                            <th style="padding:5px 7px;text-align:right;color:#4f46e5;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Preço Arb.</th>
+                            <th style="padding:5px 7px;text-align:center;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;">Mg%</th>
+                        </tr></thead>
+                        <tbody>
+                            ${rows.map(r => `<tr style="border-bottom:1px solid #f8fafc;">
+                                <td style="padding:4px 7px;white-space:nowrap;">${r.doc||''}</td>
+                                <td style="padding:4px 7px;white-space:nowrap;">${r.emissao?r.emissao.split('-').reverse().join('/'):'--'}</td>
+                                <td style="padding:4px 7px;white-space:nowrap;">${r.data?r.data.split('-').reverse().join('/'):'--'}</td>
+                                <td style="padding:4px 7px;">${r.cod||''}</td>
+                                <td style="padding:4px 7px;text-transform:uppercase;">${r.desc||''}</td>
+                                <td style="padding:4px 7px;text-align:right;">${fmtR(r.preco)}</td>
+                                <td style="padding:4px 7px;text-align:right;">${fmtR(r.preco2)}</td>
+                                <td style="padding:4px 7px;text-align:right;color:#4f46e5;font-weight:600;">${fmtR(r.precoArb)}</td>
+                                <td style="padding:4px 7px;text-align:center;">${r.mgLucro!=null?(r.mgLucro*100).toFixed(2)+'%':'--'}</td>
+                            </tr>`).join('')}
+                            <tr style="background:#f1f5f9;font-weight:700;border-top:2px solid #e2e8f0;">
+                                <td colspan="7" style="padding:5px 7px;color:#64748b;font-size:9px;text-transform:uppercase;">Média (${rows.length} registros)</td>
+                                <td style="padding:5px 7px;text-align:right;color:#4f46e5;">${fmtR(media)}</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table></div>`;
+            } catch(e) {
+                div.innerHTML = '<div style="color:#f87171;font-size:11px;padding:8px;">Erro ao carregar histórico.</div>';
+            }
+        }
+
+        async function salvarEdicao() {
+            if (_modalIdx === null) return;
+            const p         = allProducts[_modalIdx];
+            const novoPreco = parseFloat(document.getElementById('edit-preco').value) || 0;
+            const novaMgPct = parseFloat(document.getElementById('edit-mg').value)    || 0;
+            const novaMg    = novaMgPct / 100;
+
+            if (!confirm(`Confirmar alteração?\nPreço Arbitrado: ${fmt(novoPreco)}\nMargem: ${novaMgPct.toFixed(2)}%`)) return;
+
+            const r      = v => Math.round(v * 100) / 100;
+            const compra = p.custoEfetivoUnit;
+            const qtde   = p.qtd;
+
+            p.precoArbitrado = r(novoPreco);
+            p.mgLucro        = novaMg;           // armazena como decimal
+            p.lucroUnit      = r(novoPreco - compra);
+            p.vendaTotalNF   = r(qtde * novoPreco);
+            p.lucroTotal     = r(p.vendaTotalNF - (qtde * compra));
+
+            try { sessionStorage.setItem('silfers_m2_data', JSON.stringify(allProducts)); } catch(e) {}
+            renderTables();
+            fecharModal();
+        }
+
+
+    </script>
+
+    <!-- FIREBASE SDK -->
+    <script type="module">
+        import { initializeApp }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, doc, writeBatch, getDocs, query, where }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey:            "AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",
+            authDomain:        "silferssolucoes.firebaseapp.com",
+            projectId:         "silferssolucoes",
+            storageBucket:     "silferssolucoes.firebasestorage.app",
+            messagingSenderId: "923480581130",
+            appId:             "1:923480581130:web:9c3e4d8ccab43354c16bf3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        window._db          = db;
+        window._collection  = collection;
+        window._doc         = doc;
+        window._writeBatch  = writeBatch;
+        window._getDocs     = getDocs;
+        window._query       = query;
+        window._where       = where;
+        window._fbReady     = true;
+        window.dispatchEvent(new Event('fbReady'));
+    </script>
+
+    <script>
+        // ── Função de salvar no BD ────────────────────────────────────
+        async function salvarNoBD() {
+            const btn = document.getElementById('btn-salvar-bd');
+            if (!allProducts || allProducts.length === 0) {
+                alert("Nenhum produto carregado. Importe um XML primeiro.");
+                return;
+            }
+
+            btn.disabled   = true;
+            btn.innerHTML  = '⏳ Verificando...';
+
+            const numFatura = document.getElementById('bolFat').innerText || 'N/A';
+            const hoje      = new Date().toISOString().split('T')[0];
+
+            try {
+                // ── Regra: bloqueia NF já existente no BD ─────────────
+                const q    = window._query(
+                    window._collection(window._db, "produtos"),
+                    window._where("doc", "==", numFatura)
+                );
+                const snap = await window._getDocs(q);
+                if (!snap.empty) {
+                    alert(`⚠️ A NF "${numFatura}" já foi importada!\nNão é permitido subir a mesma nota mais de uma vez.`);
+                    btn.disabled  = false;
+                    btn.innerHTML = '<i data-lucide="database" class="w-4 h-4"></i> SALVAR NO BD';
+                    lucide.createIcons();
+                    return;
+                }
+                // ──────────────────────────────────────────────────────
+
+                btn.innerHTML = '⏳ Salvando...';
+                const db    = window._db;
+                const batch = window._writeBatch(db);
+
+                allProducts.forEach(p => {
+                    // ID único: fatura + código do produto (evita duplicata)
+                    const id  = `${numFatura}_${p.codigo}`;
+                    const ref = window._doc(db, "produtos", id);
+
+                    const compra   = p.custoEfetivoUnit;
+                    const qtde     = p.qtd;
+                    const r = (v) => Math.round(v * 100) / 100;
+
+                    const preco2    = r(compra * 1.20);                  // a) Venda (20%)
+                    const lucroUn   = r(preco2 - compra);                // b) Lucro UN
+                    const vlTotal3  = r(qtde * preco2);                  // c) Total
+                    const lucroTot  = r(qtde * lucroUn);                 // d) Lucro Total
+                    const precoArb  = r(p.precoArbitrado);                  // e) Preço Arbitrado
+                    const mgLucro   = p.mgLucro;                            // f) Mg Lucro (decimal)
+                    const lucroUn4  = r(precoArb - compra);              // g) Lucro UN (arb)
+                    const vlTotal5  = r(qtde * precoArb);                // h) Total (arb)
+                    const lucroTvTc = r(vlTotal5 - (qtde * compra));     // i) Lucro TNF-TC
+                    const lucroTvTp = r(vlTotal5 - vlTotal3);            // j) Lucro TNF-T20%
+
+                    batch.set(ref, {
+                        origem:   'importacao',
+                        doc:      numFatura,
+                        data:     hoje,
+                        emissao:  window._emissaoAtual || null,  // Data de emissão da NF
+                        cod:      p.codigo,
+                        qtde:     qtde,
+                        un:       p.und,
+                        desc:     p.descricao,
+                        preco:    compra,
+                        vlTotal:  r(qtde * compra),
+                        preco2,
+                        lucroUn,
+                        vlTotal3,
+                        lucroTot,
+                        precoArb,
+                        mgLucro,
+                        lucroUn4,
+                        vlTotal5,
+                        lucroTvTc,
+                        lucroTvTp
+                    });
+                });
+
+                await batch.commit();
+
+                btn.innerHTML = '✅ Salvo!';
+                btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                btn.classList.add('bg-slate-400');
+                console.log(`✅ ${allProducts.length} produto(s) salvos no Firebase. Fatura: ${numFatura}`);
+
+            } catch (err) {
+                console.error("Erro ao salvar no Firebase:", err);
+                btn.disabled  = false;
+                btn.innerHTML = '⚠️ Erro — tentar novamente';
+                alert("Erro ao salvar: " + err.message);
+            }
+        }
+
+        // Aguarda o Firebase estar pronto
+        if (!window._fbReady) {
+            window.addEventListener('fbReady', () => {}, { once: true });
+        }
+    </script>
+
+    <!-- MODAL ARBITRAGEM -->
+    <div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:0;width:96%;max-width:1160px;max-height:93vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.22);overflow:hidden;">
+
+            <!-- Header modal -->
+            <div style="padding:16px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#fafafa;border-radius:0;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="background:#eef2ff;border-radius:0;padding:7px;color:#4f46e5;display:flex;align-items:center;justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;font-weight:800;color:#1e293b;text-transform:uppercase;letter-spacing:.08em;">Arbitragem do Novo Preço</div>
+                        <div style="font-size:10px;color:#94a3b8;">Ajuste o preço de venda e margem de lucro</div>
+                    </div>
+                </div>
+                <button onclick="fecharModal()"
+                    style="background:#f1f5f9;border:none;cursor:pointer;color:#94a3b8;width:28px;height:28px;border-radius:0;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s;"
+                    onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626';"
+                    onmouseout="this.style.background='#f1f5f9';this.style.color='#94a3b8';">✕</button>
+            </div>
+
+            <!-- Corpo -->
+            <div style="display:flex;flex:1;overflow:hidden;min-height:0;">
+                <!-- Esquerda: 4 cards -->
+                <div style="width:230px;min-width:230px;padding:20px;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;gap:10px;overflow-y:auto;background:#fcfcfc;">
+                    <div style="font-size:9px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Produto Selecionado</div>
+                    <div id="modal-dados" style="display:flex;flex-direction:column;gap:10px;"></div>
+                </div>
+                <!-- Direita: histórico -->
+                <div style="flex:1;padding:20px 24px;overflow-y:auto;min-width:0;">
+                    <div style="font-size:9px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Histórico no Banco de Dados</div>
+                    <div id="modal-historico"></div>
+                </div>
+            </div>
+
+            <!-- Rodapé edição -->
+            <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#fafafa;border-radius:0;">
+                <div style="font-size:9px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Editar Valores</div>
+                <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:150px;">
+                        <label style="font-size:10px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">Preço de Venda (NF)</label>
+                        <input id="edit-preco" type="number" step="0.01" min="0"
+                            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:0;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'"
+                            oninput="recalcMgFromPreco()">
+                    </div>
+                    <div style="flex:1;min-width:150px;">
+                        <label style="font-size:10px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">Margem (%)</label>
+                        <input id="edit-mg" type="number" step="0.01" min="0"
+                            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:0;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'"
+                            oninput="recalcPrecoFromMg()">
+                    </div>
+                    <div style="min-width:110px;">
+                        <div id="mg-indicator" style="padding:9px 14px;border-radius:0;font-size:11px;font-weight:700;text-align:center;background:#dcfce7;color:#16a34a;">Saudável ✓</div>
+                    </div>
+                    <button onclick="salvarEdicao()"
+                        style="padding:9px 22px;background:#4f46e5;color:white;border:none;border-radius:0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s;"
+                        onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+                        Salvar alterações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) fecharModal();
+});
+</script>
+
+</div><!-- /m2ContentWrapper -->
+
+    <script>
+        function sairDoModulo() {
+            try {
+                var p = window.parent;
+                if (p && p !== window && p.document) {
+                    p.document.querySelectorAll('.nav-group.open').forEach(function(g) { g.classList.remove('open'); });
+                    p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(function(a) { a.classList.remove('active'); });
+                    var frame = p.document.getElementById('content-frame');
+                    if (frame) frame.src = 'M00_Dashboard.html';
+                    var title = p.document.getElementById('page-title');
+                    if (title) title.innerText = 'Dashboard';
+                    var navLinks = p.document.querySelectorAll('nav a[onclick]');
+                    for (var i = 0; i < navLinks.length; i++) {
+                        var oc = navLinks[i].getAttribute('onclick') || '';
+                        if (oc.indexOf('Dashboard') !== -1) {
+                            navLinks[i].classList.add('active'); break;
+                        }
+                    }
+                    return;
+                }
+            } catch(e) {}
+            window.location.href = 'M00_Dashboard.html';
+        }
+    </script>
+
+</body>
+</html>

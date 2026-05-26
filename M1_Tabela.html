@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SILFER'S - Base de Dados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+        .dashboard-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #e2e8f0; align-items: center; }
+        .stat-card-inline { background: white; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; justify-content: center; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+        .search-card-vertical { background: white; border: 1px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 4px 12px; height: 48px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .search-card-vertical i { color: #94a3b8; font-size: 10px; margin-bottom: 2px; }
+        .search-card-vertical input { width: 100%; border: none; outline: none; text-align: left; font-size: 11px; background: transparent; }
+        .excel-container { height: calc(100vh - 80px); overflow: auto; border: 1px solid #e2e8f0; background: #fff; margin: 0 20px 10px 20px; border-radius: 4px; }
+        table { border-collapse: separate; border-spacing: 0; table-layout: auto; width: max-content; user-select: none; }
+        th, td { height: 28px; padding: 0 10px; font-size: 11px; white-space: nowrap; background: white; line-height: 28px; border: none; transition: background-color 0.1s ease; }
+        td { border-bottom: 1px solid #f8fafc; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 40; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 600; text-align: left; cursor: pointer; }
+        tbody tr:hover td { background-color: #f1f5f9 !important; }
+        .selected-row td { background-color: #f1f5f9 !important; }
+        .sticky-col { position: sticky; z-index: 20; background: white; }
+        th.sticky-col { z-index: 55; background: #f8fafc; }
+        .excel-container.is-scrolled .bg-highlight-dynamic { background-color: #f1f5f9 !important; }
+        .excel-container.is-scrolled .c-7::after { content: ""; position: absolute; right: 0; top: 0; height: 100%; width: 1.5px; background: #e2e8f0; z-index: 60; }
+        .c-1 { left: 0;     min-width: 0; width: 1%; }
+        .c-2 { left: 70px;  min-width: 0; width: 1%; }
+        .c-3 { left: 150px; min-width: 0; width: 1%; }
+        .c-4 { left: 230px; min-width: 0; width: 1%; }
+        .c-5 { left: 280px; min-width: 0; width: 1%; }
+        .c-6 { left: 320px; min-width: 0; width: 1%; }
+        .c-7 { left: 360px; min-width: 300px; }
+        .w-mov { width: auto; white-space: nowrap; }
+        .card-val { font-size: 18px; color: #1e293b; font-weight: 500; line-height: 1.2; font-family: 'Courier New', monospace; }
+        .stat-label { text-transform: uppercase; font-size: 9px; font-weight: 600; color: #64748b; letter-spacing: .05em; margin-bottom: 1px; }
+        footer { height: 26px; background-color: #f8fafc; color: #64748b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-top: 1px solid #e2e8f0; font-family: 'Inter', sans-serif; font-size: 11px; }
+        .text-critico { color: #e11d48; font-weight: 600; }
+        .icon-action { cursor: pointer; margin-left: 8px; font-size: 12px; transition: transform 0.1s; }
+        .icon-action:hover { transform: scale(1.2); }
+        .bg-selected-card { background: #f1f5f9; border-color: #cbd5e1; }
+        #loading-overlay { position: fixed; inset: 0; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 12px; }
+        #loading-overlay .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #0d9488; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        #loading-overlay p { font-size: 12px; color: #94a3b8; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #btn-migrar { position: fixed; bottom: 20px; right: 20px; z-index: 998; padding: 9px 18px; background: #f97316; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
+        #btn-migrar:hover { background: #ea6c0a; }
+        #btn-migrar:disabled { background: #94a3b8; cursor: default; }
+    
+        /* TOP BAR */
+        .top-bar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #f8fafc; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; z-index: 10001;
+        }
+        .top-bar h1 { font-size: 12px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+        .btn-exit {
+            background: none; border: 1.5px solid #94a3b8; color: #94a3b8; border-radius: 0;
+            padding: 5px 14px; font-size: 10px; font-weight: 400; cursor: pointer;
+            text-transform: uppercase; letter-spacing: .06em; transition: all .2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-exit:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.08); }
+    
+/* ── MODAL DETALHE DO PRODUTO ─────────────────────── */
+.detalhe-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.detalhe-overlay.open{display:flex}
+.detalhe-card{background:#fff;width:580px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.detalhe-header{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#1e293b,#334155);color:#f8fafc;gap:12px}
+.detalhe-header h2{font-size:12px;font-weight:400;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;margin:0}
+.detalhe-header .detalhe-cod{font-size:10px;color:#94a3b8;margin-top:2px}
+.detalhe-close{background:none;border:1.5px solid #94a3b8;color:#94a3b8;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:13px;flex-shrink:0}
+.detalhe-close:hover{border-color:#ef4444;color:#ef4444}
+.detalhe-body{flex:1;overflow-y:auto;padding:20px}
+.detalhe-section{margin-bottom:16px}
+.detalhe-section-title{font-size:9px;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f1f5f9}
+.detalhe-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 16px}
+.detalhe-grid.col2{grid-template-columns:1fr 1fr}
+.detalhe-item label{display:block;font-size:8px;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.detalhe-item span{font-size:12px;color:#1e293b;font-family:'Courier New',monospace}
+.detalhe-item span.pos{color:#16a34a}
+.detalhe-item span.neg{color:#dc2626}
+.detalhe-item span.destaque{font-size:14px}
+.detalhe-insight{background:#f0f9ff;border:1px solid #bae6fd;padding:10px 14px;font-size:10px;color:#0c4a6e;margin-top:12px;line-height:1.6}
+.detalhe-insight i{color:#0284c7;margin-right:6px}
+    .text-teal-600 { color: #0d9488 !important; }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <h1><i class="fas fa-database" style="font-size:13px;margin-right:8px;opacity:.7;"></i> Banco de Dados</h1>
+        <button class="btn-exit" onclick="sairDoModulo()">&#10005; Sair</button>
+    </div>
+
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Conectando ao banco de dados...</p>
+    </div>
+
+    <main id="main-content">
+        <header class="dashboard-bar">
+            <div class="stat-card-inline shadow-sm" id="card-itens">
+                <p class="stat-label">Itens</p>
+                <h3 id="stat-itens" class="card-val">0</h3>
+            </div>
+            <div class="stat-card-inline shadow-sm" id="card-venda">
+                <p class="stat-label">Venda NF</p>
+                <h3 id="stat-venda" class="card-val text-teal-600">R$ 0,00</h3>
+            </div>
+            <div class="stat-card-inline shadow-sm" id="card-custo">
+                <p class="stat-label">Custo Total</p>
+                <h3 id="stat-custo" class="card-val">R$ 0,00</h3>
+            </div>
+            <div class="stat-card-inline shadow-sm" id="card-lucro">
+                <p class="stat-label">Lucro Est.</p>
+                <h3 id="stat-lucro" class="card-val text-emerald-600">R$ 0,00</h3>
+            </div>
+            <div class="stat-card-inline shadow-sm" id="card-markup">
+                <p class="stat-label">Rentabilidade</p>
+                <h3 id="stat-markup" class="card-val text-teal-600">0%</h3>
+            </div>
+            <div class="search-card-vertical">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput"
+                    onkeyup="filterTable()"
+                    onfocus="this.placeholder='# pesquisa pelo código'"
+                    onblur="this.placeholder='Pesquisar...'"
+                    placeholder="Pesquisar...">
+            </div>
+        </header>
+
+        <div class="excel-container" id="tableContainer" onscroll="this.classList.toggle('is-scrolled', this.scrollLeft > 10)">
+            <table id="productTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <footer id="main-footer"></footer>
+    </main>
+
+    <button id="btn-migrar" onclick="migrarDadosParaFirebase()">
+        🔥 Migrar dados para o Firebase
+    </button>
+
+    <script type="module">
+        import { initializeApp }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, writeBatch, deleteDoc, updateDoc, query, where }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey:            "AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",
+            authDomain:        "silferssolucoes.firebaseapp.com",
+            projectId:         "silferssolucoes",
+            storageBucket:     "silferssolucoes.firebasestorage.app",
+            messagingSenderId: "923480581130",
+            appId:             "1:923480581130:web:9c3e4d8ccab43354c16bf3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        window._db            = db;
+        window._collection    = collection;
+        window._getDocs       = getDocs;
+        window._setDoc        = setDoc;
+        window._doc           = doc;
+        window._writeBatch    = writeBatch;
+        window._deleteDoc     = deleteDoc;
+        window._updateDoc     = updateDoc;
+        window._query         = query;
+        window._where         = where;
+        window._firebaseReady = true;
+
+        window.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        const columns = [
+            { id: "doc",       label: "Doc Entrada",     cls: "sticky-col c-1" },
+            { id: "emissao",   label: "Emissão",         cls: "sticky-col c-2" },
+            { id: "data",      label: "Data Entrada",    cls: "sticky-col c-3" },
+            { id: "cod",       label: "Código",          cls: "sticky-col c-4" },
+            { id: "qtde",      label: "Qtde",            cls: "sticky-col c-5" },
+            { id: "un",        label: "UN",              cls: "sticky-col c-6" },
+            { id: "desc",      label: "Descrição",       cls: "sticky-col c-7" },
+            /*{ id: "emb",       label: "Embalagem",       cls: "w-mov" },*/
+            { id: "preco",     label: "Custo",           cls: "w-mov", highlight: true },
+            { id: "vlTotal",   label: "Total",       cls: "w-mov", highlight: true },
+            { id: "preco2",    label: "Venda (20%)",          cls: "w-mov" },
+            { id: "lucroUn",   label: "Lucro UN",        cls: "w-mov" },
+            { id: "vlTotal3",  label: "Total",      cls: "w-mov" },
+            { id: "lucroTot",  label: "Lucro Total",       cls: "w-mov" },
+            { id: "precoArb",  label: "Preço Arbitrado (NF)", cls: "w-mov", highlight: true },
+            { id: "mgLucro",   label: "Mg Lucro",        cls: "w-mov", highlight: true },
+            { id: "lucroUn4",  label: "Lucro UN",       cls: "w-mov", highlight: true },
+            { id: "vlTotal5",  label: "Total",      cls: "w-mov", highlight: true },
+            { id: "lucroTvTc", label: "Lucro TNF-TC",     cls: "w-mov" },
+            { id: "lucroTvTp", label: "Lucro TNF-T20%",     cls: "w-mov" }
+        ];
+
+        const DADOS_ORIGINAIS = [
+            {"doc":"5483",   "data":"2023-01-05","cod":"5",     "qtde":30,"un":"CX","desc":"ÁGUA MINERAL LAPRIORI 200ML 48X1 COPO","emb":"1XUN",  "preco":18.35,"vlTotal":550.5, "preco2":22.02,"lucroUn":3.67, "vlTotal3":660.6,"lucroTot":110.1,"precoArb":28.8, "mgLucro":0.569,"lucroUn4":10.45,"vlTotal5":864,  "lucroTvTc":313.5,"lucroTvTp":203.4},
+            {"doc":"873745", "data":"2023-01-05","cod":"7939F", "qtde":12,"un":"UN","desc":"ALCOOL LIQ 1LT 70 INPM ITAJA",          "emb":"1X1LT","preco":5.81, "vlTotal":69.72,"preco2":6.97, "lucroUn":1.16, "vlTotal3":83.66,"lucroTot":13.94,"precoArb":6.20, "mgLucro":0.05, "lucroUn4":0.39, "vlTotal5":74.40,"lucroTvTc":4.68, "lucroTvTp":1.01},
+            {"doc":"1023",   "data":"2023-02-10","cod":"12",    "qtde":10,"un":"UN","desc":"DETERGENTE LÍQUIDO 500ML",               "emb":"1X1",  "preco":3.50, "vlTotal":35.0,  "preco2":3.00, "lucroUn":-0.50,"vlTotal3":null, "lucroTot":null, "precoArb":null,"mgLucro":-0.15,"lucroUn4":null, "vlTotal5":30.0, "lucroTvTc":-5.0,"lucroTvTp":-5.0}
+        ];
+
+        let products          = [];
+        let filteredProducts  = [];
+        let showingCriticalOnly = false;
+        let sortDir           = {};
+        let selectedIndexes   = new Set();
+        let isSelectingByDrag = false;
+        let lastClickedIndex  = null;
+
+        function handleRowInteraction(e, index) {
+            if (e.type === 'mousedown') {
+                if (e.shiftKey && lastClickedIndex !== null) { _suppressDetail = true;
+                    const start = Math.min(lastClickedIndex, index);
+                    const end   = Math.max(lastClickedIndex, index);
+                    for (let i = start; i <= end; i++) selectedIndexes.add(i);
+                } else if (e.ctrlKey || e.metaKey) { _suppressDetail = true;
+                    selectedIndexes.has(index) ? selectedIndexes.delete(index) : selectedIndexes.add(index);
+                } else {
+                    selectedIndexes.clear();
+                    selectedIndexes.add(index);
+                    isSelectingByDrag = true;
+                }
+                lastClickedIndex = index;
+            } else if (e.type === 'mouseenter' && isSelectingByDrag) {
+                selectedIndexes.add(index);
+            }
+            updateUISelection();
+        }
+
+        function stopSelection()  { isSelectingByDrag = false; }
+        function clearSelection() { selectedIndexes.clear(); lastClickedIndex = null; updateUISelection(); }
+
+        document.addEventListener('mouseup',  stopSelection);
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if(document.getElementById('detalheOverlay').classList.contains('open')){fecharDetalhe();}else{clearSelection();} } });
+
+        function updateUISelection() {
+            document.querySelectorAll('#tableBody tr').forEach((row, i) => {
+                row.classList.toggle('selected-row', selectedIndexes.has(i));
+            });
+            const targetData = selectedIndexes.size > 0
+                ? Array.from(selectedIndexes).map(i => filteredProducts[i]).filter(Boolean)
+                : filteredProducts;
+            updateStats(targetData, selectedIndexes.size > 0);
+            updateDynamicFooter(targetData, selectedIndexes.size > 1);
+        }
+
+        function updateDynamicFooter(data, isMultiple) {
+            const footer = document.getElementById('main-footer');
+            if (isMultiple) {
+                const avg = (key) => data.reduce((acc, p) => acc + (p[key] || 0), 0) / data.length;
+                const f2  = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                footer.innerHTML = `
+                    <div class="flex justify-between w-full items-center" style="font-family:'Inter',sans-serif;font-size:11px;color:#000000;font-weight:400;">
+                        <span style="text-transform:uppercase;">Média — ${data.length} itens selecionados</span>
+                        <span>Custo: ${f2(avg('preco'))}</span>
+                        <span>Venda (20%): ${f2(avg('preco2'))}</span>
+                        <span>Preço Arb.: ${f2(avg('precoArb'))}</span>
+                        <span>Mg Lucro: ${avg('mgLucro') != null ? (avg('mgLucro') * 100).toFixed(2) + '%' : '--'}</span>
+                        <span>TNF-TC: ${f2(avg('lucroTvTc'))}</span>
+                        <span>TNF-T20%: ${f2(avg('lucroTvTp'))}</span>
+                    </div>`;
+            } else {
+                const custoTotal  = products.reduce((acc, p) => acc + (p.vlTotal   || 0), 0);
+                const vendaTotal  = products.reduce((acc, p) => acc + (p.vlTotal5  || 0), 0);
+                const lucroTotal  = products.reduce((acc, p) => acc + (p.lucroTvTc || 0), 0);
+                const markupGeral = custoTotal > 0 ? ((lucroTotal / custoTotal) * 100).toFixed(1) : "0";
+                const criticos    = products.filter(p => (p.mgLucro || 0) < 0.1).length;
+                footer.innerHTML = `
+                    <div id="footer-left">Exibindo ${filteredProducts.length} de ${products.length} itens</div>
+                    <div id="footer-center">Markup Médio Geral: ${markupGeral}%</div>
+                    <div id="footer-right" class="flex items-center">
+                        <span class="${criticos > 0 && !showingCriticalOnly ? 'text-critico' : ''}">
+                            ${showingCriticalOnly ? 'Exibindo apenas margens críticas' : (criticos > 0 ? `${criticos} itens com margem crítica (&lt;10%)` : 'Verificação em dia')}
+                        </span>
+                        ${showingCriticalOnly
+                            ? `<i class="fas fa-undo icon-action text-slate-500" title="Restaurar" onclick="handleCriticalToggle()"></i>`
+                            : (criticos > 0 ? `<i class="fas fa-exclamation-triangle icon-action text-critico" title="Filtrar Críticos" onclick="handleCriticalToggle()"></i>` : '')
+                        }
+                        <button onclick="excluirNF()" title="Excluir NF do banco de dados"
+                            style="background:none;border:1px solid #fecaca;color:#dc2626;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;margin-left:12px;font-family:inherit;transition:.15s;"
+                            onmouseover="this.style.background='#fef2f2';this.style.borderColor='#dc2626'"
+                            onmouseout="this.style.background='none';this.style.borderColor='#fecaca'">
+                            <i class="fas fa-trash-alt" style="margin-right:4px;font-size:9px;"></i>Excluir
+                        </button>
+                    </div>`;
+            }
+        }
+
+        function updateStats(data, isSelection) {
+            const custo = data.reduce((acc, p) => acc + (p.vlTotal   || 0), 0);
+            const venda = data.reduce((acc, p) => acc + (p.vlTotal5  || 0), 0);
+            const lucro = data.reduce((acc, p) => acc + (p.lucroTvTc || 0), 0);
+            document.getElementById('stat-itens').innerText  = data.length;
+            document.getElementById('stat-venda').innerText  = venda.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-custo').innerText  = custo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-lucro').innerText  = lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-markup').innerText = custo > 0 ? ((lucro / custo) * 100).toFixed(1) + "%" : "0%";
+            ['card-itens','card-venda','card-custo','card-lucro','card-markup'].forEach(id => {
+                document.getElementById(id).classList.toggle('bg-selected-card', isSelection);
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = data.map((p, index) => `
+                <tr ondblclick="abrirDetalhe(${index},event)" onmousedown="handleRowInteraction(event,${index})" onmouseenter="handleRowInteraction(event,${index})" style="cursor:pointer;">
+                    ${columns.map(c => {
+                        let v = p[c.id] ?? "";
+                        if (c.id === 'data' || c.id === 'emissao') v = (v || "").split('-').reverse().join('/');
+                        else if (typeof v === 'number' && c.id !== 'cod')
+                            v = c.id === 'mgLucro' ? (v * 100).toFixed(2) + "%" : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        return `<td class="${c.cls} ${c.highlight ? 'bg-highlight-dynamic' : ''}" style="${typeof p[c.id] === 'number' ? 'text-align:right' : ''}">${v}</td>`;
+                    }).join('')}
+                </tr>`).join('');
+            updateUISelection();
+        }
+
+        function filterTable() {
+            const q = document.getElementById('searchInput').value.trim().toLowerCase();
+            showingCriticalOnly = false;
+            filteredProducts = products.filter(p => {
+                const desc  = (p.desc  || "").toLowerCase();
+                const cod   = String(p.cod   || "").toLowerCase();
+                const doc_  = String(p.doc   || "").toLowerCase();
+                if (q.startsWith('#')) return cod.startsWith(q.substring(1));
+                // Pesquisa por data: converte YYYY-MM-DD para DD/MM/YYYY para comparar
+                const dataFmt = (p.data || "").split('-').reverse().join('/');
+                const dataAno = (p.data || "");
+                // Campos numéricos formatados para busca (vírgula e ponto)
+                const nums = ['preco','vlTotal','preco2','lucroUn','vlTotal3','lucroTot',
+                              'precoArb','lucroUn4','vlTotal5','lucroTvTc','lucroTvTp']
+                    .map(k => (p[k] != null ? String(p[k]).replace('.',',') : '')).join(' ');
+                return desc.includes(q) || doc_.includes(q) || dataFmt.includes(q) || dataAno.includes(q) || nums.includes(q);
+            });
+            selectedIndexes.clear();
+            renderTable(filteredProducts);
+        }
+
+        function handleCriticalToggle() {
+            showingCriticalOnly = !showingCriticalOnly;
+            filteredProducts    = showingCriticalOnly ? products.filter(p => (p.mgLucro || 0) < 0.1) : [...products];
+            selectedIndexes.clear();
+            renderTable(filteredProducts);
+        }
+
+        function sortTable(id) {
+            sortDir[id] = !sortDir[id];
+            filteredProducts.sort((a, b) => {
+                let v1 = a[id], v2 = b[id];
+                if (typeof v1 === 'string') return sortDir[id] ? v1.localeCompare(v2) : v2.localeCompare(v1);
+                return sortDir[id] ? v1 - v2 : v2 - v1;
+            });
+            renderTable(filteredProducts);
+        }
+
+
+
+        async function migrarDadosParaFirebase() {
+            const btn = document.getElementById('btn-migrar');
+            btn.disabled    = true;
+            btn.textContent = "⏳ Enviando...";
+            try {
+                const db    = window._db;
+                const batch = window._writeBatch(db);
+                DADOS_ORIGINAIS.forEach(produto => {
+                    const id  = String(produto.cod || produto.doc);
+                    const ref = window._doc(db, "produtos", id);
+                    const data = {};
+                    Object.keys(produto).forEach(k => { data[k] = produto[k] ?? null; });
+                    batch.set(ref, data);
+                });
+                await batch.commit();
+                btn.style.display = "none";
+                await carregarDoFirebase();
+            } catch (err) {
+                console.error("Erro na migração:", err);
+                btn.disabled    = false;
+                btn.textContent = "⚠️ Erro — tentar novamente";
+                alert("Erro ao migrar: " + err.message);
+            }
+        }
+
+        async function carregarDoFirebase() {
+            try {
+                const snap = await window._getDocs(window._collection(window._db, "produtos"));
+                if (snap.empty) {
+                    document.getElementById('btn-migrar').style.display = "block";
+                    products         = [];
+                    filteredProducts = [];
+                    renderTable([]);
+                } else {
+                    products         = snap.docs.map(d => ({...d.data(), _docId: d.id}));
+                    filteredProducts = [...products];
+                    renderTable(products);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar do Firebase:", err);
+                document.getElementById('loading-overlay').querySelector('p').textContent =
+                    "Erro de conexão. Verifique o console (F12).";
+                return;
+            }
+            document.getElementById('loading-overlay').style.display = "none";
+        }
+
+        function init() {
+            document.getElementById('tableHead').innerHTML =
+                `<tr>${columns.map(c =>
+                    `<th class="${c.cls}" onclick="sortTable('${c.id}')">${c.label}</th>`
+                ).join('')}</tr>`;
+
+            if (window._firebaseReady) {
+                carregarDoFirebase();
+            } else {
+                window.addEventListener('firebaseReady', carregarDoFirebase, { once: true });
+            }
+        }
+
+        
+        // ── Excluir NF do BD ──────────────────────────────────────
+        async function excluirNF() {
+            const docNum = prompt('Digite o número do Doc Entrada que deseja excluir:');
+            if (!docNum || !docNum.trim()) return;
+            const docTrimmed = docNum.trim();
+
+            // Valida se existe nos dados carregados
+            const found = products.filter(p => String(p.doc) === docTrimmed);
+            if (found.length === 0) {
+                alert('Documento "' + docTrimmed + '" não encontrado no banco de dados.');
+                return;
+            }
+
+            // Confirmação com contagem
+            if (!confirm('Foram encontrados ' + found.length + ' produto(s) na NF ' + docTrimmed + '.\nTodos os produtos dessa nota serão EXCLUÍDOS permanentemente.\n\nDeseja continuar?')) return;
+
+            try {
+                const db = window._db;
+                const q = window._query(
+                    window._collection(db, 'produtos'),
+                    window._where('doc', '==', docTrimmed)
+                );
+                const snap = await window._getDocs(q);
+
+                if (snap.empty) {
+                    alert('Nenhum registro encontrado no Firebase para o Doc "' + docTrimmed + '".');
+                    return;
+                }
+
+                const batch = window._writeBatch(db);
+                let deletedCount = 0;
+                snap.forEach(d => {
+                    batch.delete(d.ref);
+                    deletedCount++;
+                });
+                await batch.commit();
+
+                alert('✅ NF ' + docTrimmed + ' excluída com sucesso! (' + deletedCount + ' produtos removidos)');
+                await carregarDoFirebase();
+            } catch (err) {
+                console.error('Erro ao excluir:', err);
+                alert('⚠️ Erro ao excluir: ' + err.message);
+            }
+        }
+
+    // DETALHE DO PRODUTO
+    var _suppressDetail = false;
+
+    function fmtVal(v) {
+        if (v == null || v === '') return '\u2014';
+        return typeof v === 'number' ? v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : v;
+    }
+    function fmtData(v) {
+        if (!v) return '\u2014';
+        return v.includes('-') ? v.split('-').reverse().join('/') : v;
+    }
+    function fmtPct(v) {
+        if (v == null) return '\u2014';
+        return (v * 100).toFixed(2) + '%';
+    }
+    function corValor(v) {
+        if (v == null) return '';
+        return v >= 0 ? 'pos' : 'neg';
+    }
+
+    var _editIndex = -1;
+    var _inputStyle = 'border:none;border-bottom:1.5px solid #cbd5e1;background:transparent;color:#1e293b;font-family:Courier New,monospace;font-size:12px;width:100%;padding:2px 0;outline:none;';
+    var _dateStyle  = 'border:none;border-bottom:1.5px solid #cbd5e1;background:transparent;color:#1e293b;font-family:Courier New,monospace;font-size:11px;width:100%;padding:2px 0;outline:none;color-scheme:light;';
+
+    function _r(v){ return Math.round(v*100)/100; }
+
+    function recalcDetalhe(){
+        var q=parseFloat(document.getElementById('ed_qtde').value)||0;
+        var c=Math.round((parseFloat(document.getElementById('ed_preco').value)||0)*100)/100;
+        var arb=Math.round((parseFloat(document.getElementById('ed_precoArb').value)||0)*100)/100;
+        var vlTotal=_r(q*c), preco2=_r(c*1.20), lucroUn=_r(preco2-c);
+        var vlTotal3=_r(q*preco2), lucroTot=_r(q*lucroUn);
+        var mgLucro=c>0?_r((arb/c)-1):0, lucroUn4=_r(arb-c);
+        var vlTotal5=_r(q*arb), lucroTvTc=_r(vlTotal5-vlTotal), lucroTvTp=_r(vlTotal5-vlTotal3);
+        var mgClass=mgLucro>=0.3?'pos':(mgLucro>=0.1?'':'neg');
+        var mgLabel=mgLucro>=0.3?'Saud\u00e1vel':(mgLucro>=0.1?'Aten\u00e7\u00e3o':'Cr\u00edtica');
+        document.getElementById('calc_vlTotal').innerHTML='<span class="destaque">'+fmtVal(vlTotal)+'</span>';
+        document.getElementById('calc_preco2').textContent=fmtVal(preco2);
+        document.getElementById('calc_lucroUn').innerHTML='<span class="'+corValor(lucroUn)+'">'+fmtVal(lucroUn)+'</span>';
+        document.getElementById('calc_vlTotal3').textContent=fmtVal(vlTotal3);
+        document.getElementById('calc_lucroTot').innerHTML='<span class="'+corValor(lucroTot)+'">'+fmtVal(lucroTot)+'</span>';
+        document.getElementById('calc_mgLucro').innerHTML='<span class="destaque '+mgClass+'">'+fmtPct(mgLucro)+' ('+mgLabel+')</span>';
+        document.getElementById('calc_lucroUn4').innerHTML='<span class="'+corValor(lucroUn4)+'">'+fmtVal(lucroUn4)+'</span>';
+        document.getElementById('calc_vlTotal5').textContent=fmtVal(vlTotal5);
+        document.getElementById('calc_lucroTvTc').innerHTML='<span class="destaque '+corValor(lucroTvTc)+'">'+fmtVal(lucroTvTc)+'</span>';
+        document.getElementById('calc_lucroTvTp').innerHTML='<span class="destaque '+corValor(lucroTvTp)+'">'+fmtVal(lucroTvTp)+'</span>';
+    }
+
+    async function salvarEdicaoM1(){
+        var p=filteredProducts[_editIndex];
+        if(!p||!p._docId){alert('Produto sem refer\u00eancia no banco.');return;}
+        var btn=document.getElementById('btnSalvarM1');
+        btn.disabled=true;btn.textContent='Salvando...';
+        var q=parseFloat(document.getElementById('ed_qtde').value)||0;
+        var c=Math.round((parseFloat(document.getElementById('ed_preco').value)||0)*100)/100;
+        var arb=Math.round((parseFloat(document.getElementById('ed_precoArb').value)||0)*100)/100;
+        var vlTotal=_r(q*c),preco2=_r(c*1.20),lucroUn=_r(preco2-c);
+        var vlTotal3=_r(q*preco2),lucroTot=_r(q*lucroUn);
+        var mgLucro=c>0?_r((arb/c)-1):0,lucroUn4=_r(arb-c);
+        var vlTotal5=_r(q*arb),lucroTvTc=_r(vlTotal5-vlTotal),lucroTvTp=_r(vlTotal5-vlTotal3);
+        var dados={
+            doc:document.getElementById('ed_doc').value.trim().toUpperCase(),
+            emissao:document.getElementById('ed_emissao').value,
+            data:document.getElementById('ed_data').value,
+            cod:p.cod,
+            qtde:q,
+            un:document.getElementById('ed_un').value.trim().toUpperCase(),
+            desc:document.getElementById('ed_desc').value.trim().toUpperCase(),
+            preco:c,vlTotal:vlTotal,preco2:preco2,lucroUn:lucroUn,
+            vlTotal3:vlTotal3,lucroTot:lucroTot,
+            precoArb:arb,mgLucro:mgLucro,lucroUn4:lucroUn4,
+            vlTotal5:vlTotal5,lucroTvTc:lucroTvTc,lucroTvTp:lucroTvTp,
+            atualizadoEm:new Date().toISOString()
+        };
+        if(p.origem) dados.origem=p.origem;
+        try{
+            await window._setDoc(window._doc(window._db,'produtos',p._docId),dados);
+            alert('\u2705 Produto '+p.cod+' atualizado com sucesso!');
+            fecharDetalhe();await carregarDoFirebase();
+        }catch(e){alert('\u26a0\ufe0f Erro ao salvar: '+e.message);}
+        finally{btn.disabled=false;btn.textContent='💾 SALVAR';}
+    }
+
+    function abrirDetalhe(index, evt) {
+        if (_suppressDetail) { _suppressDetail = false; return; }
+        if (evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey)) return;
+        var p = filteredProducts[index];
+        if (!p) return;
+        _editIndex = index;
+
+        document.getElementById('detalheDesc').innerHTML =
+            '<input id="ed_desc" value="'+((p.desc||'')).replace(/"/g,'&quot;')+'" style="border:none;border-bottom:1.5px solid rgba(148,163,184,.4);background:transparent;color:#f8fafc;font-family:Courier New,monospace;font-size:12px;width:100%;padding:2px 0;outline:none;text-transform:uppercase;" />';
+        document.getElementById('detalheCod').textContent = 'C\u00f3digo: ' + (p.cod || '\u2014') + '  |  UN: ' + (p.un || '\u2014');
+
+        var mg = p.mgLucro != null ? p.mgLucro : 0;
+        var mgClass = mg >= 0.3 ? 'pos' : (mg >= 0.1 ? '' : 'neg');
+        var mgLabel = mg >= 0.3 ? 'Saud\u00e1vel' : (mg >= 0.1 ? 'Aten\u00e7\u00e3o' : 'Cr\u00edtica');
+
+        var insightText = '';
+        if (mg < 0.1) insightText = 'Margem cr\u00edtica \u2014 este produto exige revis\u00e3o imediata de pre\u00e7o ou renegocia\u00e7\u00e3o de custo de aquisi\u00e7\u00e3o para viabilizar sua perman\u00eancia no portf\u00f3lio. Avalie reajuste ou descontinua\u00e7\u00e3o planejada.';
+        else if (mg < 0.3) insightText = 'Margem em zona de aten\u00e7\u00e3o \u2014 monitore varia\u00e7\u00f5es de custo e avalie oportunidade de reajuste para alcan\u00e7ar a faixa saud\u00e1vel (\u226530%). Negocie melhores condi\u00e7\u00f5es com o fornecedor.';
+        else insightText = 'Margem saud\u00e1vel \u2014 produto com boa rentabilidade. Priorize manuten\u00e7\u00e3o de estoque e negocie melhores condi\u00e7\u00f5es de compra para ampliar a vantagem competitiva.';
+
+        var s = _inputStyle;
+        var sd = _dateStyle;
+        function toISO(v){if(!v)return '';if(v.indexOf('/')>=0){var pp=v.split('/');return pp[2]+'-'+pp[1]+'-'+pp[0];}return v;}
+        var emissaoVal = toISO(p.emissao||'');
+        var dataVal = toISO(p.data||'');
+
+        var html = '';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-tag" style="margin-right:4px;"></i> Identifica\u00e7\u00e3o e Entrada</div><div class="detalhe-grid">';
+        html += '<div class="detalhe-item"><label>Doc Entrada</label><input id="ed_doc" value="'+((p.doc||'')).replace(/"/g,'&quot;')+'" style="'+s+'text-transform:uppercase;" /></div>';
+        html += '<div class="detalhe-item"><label>Emiss\u00e3o</label><input type="date" id="ed_emissao" value="'+emissaoVal+'" style="'+sd+'" /></div>';
+        html += '<div class="detalhe-item"><label>Data Entrada</label><input type="date" id="ed_data" value="'+dataVal+'" style="'+sd+'" /></div>';
+        html += '<div class="detalhe-item"><label>Quantidade</label><input type="number" step="1" min="0" id="ed_qtde" value="'+(p.qtde||0)+'" oninput="recalcDetalhe()" style="'+s+'" /></div>';
+        html += '<div class="detalhe-item"><label>Unidade</label><input id="ed_un" value="'+((p.un||'')).replace(/"/g,'&quot;')+'" style="'+s+'text-transform:uppercase;" /></div>';
+        html += '<div class="detalhe-item"><label>C\u00f3digo</label><span class="destaque">'+(p.cod||'\u2014')+'</span></div>';
+        html += '</div></div>';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-coins" style="margin-right:4px;"></i> Custo de Aquisi\u00e7\u00e3o</div><div class="detalhe-grid">';
+        html += '<div class="detalhe-item"><label>Custo Unit\u00e1rio</label><input type="number" step="0.01" min="0" id="ed_preco" value="'+(p.preco||0)+'" oninput="recalcDetalhe()" style="'+s+'" /></div>';
+        html += '<div class="detalhe-item"><label>Total Compra</label><span id="calc_vlTotal"><span class="destaque">'+fmtVal(p.vlTotal)+'</span></span></div>';
+        html += '</div></div>';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-percent" style="margin-right:4px;"></i> Venda \u2014 Markup 20%</div><div class="detalhe-grid">';
+        html += '<div class="detalhe-item"><label>Pre\u00e7o Venda</label><span id="calc_preco2">'+fmtVal(p.preco2)+'</span></div>';
+        html += '<div class="detalhe-item"><label>Lucro Unit\u00e1rio</label><span id="calc_lucroUn"><span class="'+corValor(p.lucroUn)+'">'+fmtVal(p.lucroUn)+'</span></span></div>';
+        html += '<div class="detalhe-item"><label>Total Venda</label><span id="calc_vlTotal3">'+fmtVal(p.vlTotal3)+'</span></div>';
+        html += '<div class="detalhe-item detalhe-item-full"><label>Lucro Total</label><span id="calc_lucroTot"><span class="'+corValor(p.lucroTot)+'">'+fmtVal(p.lucroTot)+'</span></span></div>';
+        html += '</div></div>';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-balance-scale" style="margin-right:4px;"></i> Pre\u00e7o Arbitrado (NF)</div><div class="detalhe-grid">';
+        html += '<div class="detalhe-item"><label>Pre\u00e7o Arbitrado</label><input type="number" step="0.01" min="0" id="ed_precoArb" value="'+(p.precoArb||0)+'" oninput="recalcDetalhe()" style="'+s+'" /></div>';
+        html += '<div class="detalhe-item"><label>Margem de Lucro</label><span id="calc_mgLucro"><span class="destaque '+mgClass+'">'+fmtPct(mg)+' ('+mgLabel+')</span></span></div>';
+        html += '<div class="detalhe-item"><label>Lucro Unit\u00e1rio</label><span id="calc_lucroUn4"><span class="'+corValor(p.lucroUn4)+'">'+fmtVal(p.lucroUn4)+'</span></span></div>';
+        html += '<div class="detalhe-item detalhe-item-full"><label>Total Arbitrado</label><span id="calc_vlTotal5">'+fmtVal(p.vlTotal5)+'</span></div>';
+        html += '</div></div>';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-chart-bar" style="margin-right:4px;"></i> An\u00e1lise Comparativa</div><div class="detalhe-grid">';
+        html += '<div class="detalhe-item"><label>Lucro TNF vs Total Compra</label><span id="calc_lucroTvTc"><span class="destaque '+corValor(p.lucroTvTc)+'">'+fmtVal(p.lucroTvTc)+'</span></span></div>';
+        html += '<div class="detalhe-item"><label>Lucro TNF vs Total 20%</label><span id="calc_lucroTvTp"><span class="destaque '+corValor(p.lucroTvTp)+'">'+fmtVal(p.lucroTvTp)+'</span></span></div>';
+        html += '</div></div>';
+
+        html += '<div class="detalhe-section"><div class="detalhe-section-title"><i class="fas fa-lightbulb" style="margin-right:4px;"></i> Insight</div>';
+        html += '<div style="font-size:11px;color:#475569;line-height:1.6;padding:4px 0;">'+insightText+'</div></div>';
+
+        html += '<div style="padding:16px 0 4px;display:flex;justify-content:flex-end;gap:8px;">';
+        html += '<button id="btnSalvarM1" onclick="salvarEdicaoM1()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;padding:10px 32px;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;transition:.2s;box-shadow:0 2px 8px rgba(22,163,74,.3);">💾 SALVAR</button>';
+        html += '</div>';
+
+        document.getElementById('detalheBody').innerHTML = html;
+        document.getElementById('detalheOverlay').classList.add('open');
+    }
+
+    function fecharDetalhe() {
+        document.getElementById('detalheOverlay').classList.remove('open');
+    }
+
+
+init();
+    </script>
+
+
+<!-- MODAL DETALHE DO PRODUTO -->
+<div class="detalhe-overlay" id="detalheOverlay">
+    <div class="detalhe-card">
+        <div class="detalhe-header">
+            <div>
+                <h2 id="detalheDesc">—</h2>
+                <div class="detalhe-cod" id="detalheCod"></div>
+            </div>
+            <button class="detalhe-close" onclick="fecharDetalhe()">✕</button>
+        </div>
+        <div class="detalhe-body" id="detalheBody"></div>
+    </div>
+</div>
+
+    <script>
+        function sairDoModulo() {
+            try {
+                var p = window.parent;
+                if (p && p !== window && p.document) {
+                    p.document.querySelectorAll('.nav-group.open').forEach(function(g) { g.classList.remove('open'); });
+                    p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(function(a) { a.classList.remove('active'); });
+                    var frame = p.document.getElementById('content-frame');
+                    if (frame) frame.src = 'M00_Dashboard.html';
+                    var title = p.document.getElementById('page-title');
+                    if (title) title.innerText = 'Dashboard';
+                    var navLinks = p.document.querySelectorAll('nav a[onclick]');
+                    for (var i = 0; i < navLinks.length; i++) {
+                        var oc = navLinks[i].getAttribute('onclick') || '';
+                        if (oc.indexOf('Dashboard') !== -1) {
+                            navLinks[i].classList.add('active'); break;
+                        }
+                    }
+                    return;
+                }
+            } catch(e) {}
+            window.location.href = 'M00_Dashboard.html';
+        }
+    </script>
+
+</body>
+</html>
