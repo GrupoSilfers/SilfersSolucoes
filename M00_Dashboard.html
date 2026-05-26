@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#1e293b;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.top-bar{background:linear-gradient(135deg,#1e293b,#334155);color:#f8fafc;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);flex-shrink:0;z-index:100}
+.top-bar h1{font-size:12px;font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+.btn-exit{background:none;border:1.5px solid #94a3b8;color:#94a3b8;border-radius:0;padding:5px 14px;font-size:10px;font-weight:400;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-exit:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.08)}
+.main{flex:1;overflow-y:auto;padding:16px 20px}
+.filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.fbtn{padding:5px 14px;font-size:9px;font-weight:400;border:1.5px solid #cbd5e1;background:#fff;color:#64748b;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;transition:all .2s;font-family:'Inter',sans-serif}
+.fbtn:hover,.fbtn.active{background:#0d9488;color:#fff;border-color:#0d9488}
+.fbtn-refresh{margin-left:auto}
+.kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid #e2e8f0;padding:8px 10px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .2s;position:relative}
+.kpi:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.kpi-label{font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+.kpi-value{font-size:18px;font-weight:500;color:#1e293b;font-family:'Courier New',monospace;margin-top:1px}
+.kpi-value.pos{color:#16a34a}.kpi-value.neg{color:#dc2626}
+.kpi-sub{font-size:10px;color:#78859b;margin-top:1px}
+.kpi-action{cursor:pointer;border:1.5px solid #0d9488;background:#f0fdfa}
+.kpi-action:hover{background:#ccfbf1;box-shadow:0 3px 12px rgba(13,148,136,.15)}
+.kpi-action .kpi-value{color:#0d9488}
+/* VOICE TRIGGER — blue circle, head silhouette */
+.voice-trigger{position:absolute;top:-10px;right:-10px;width:34px;height:34px;border-radius:50%;background:#0d9488;border:none;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 12px rgba(13,148,136,.4);z-index:10;transition:all .3s;padding:0}
+.voice-trigger.show{display:flex}
+.voice-trigger:hover{transform:scale(1.12);box-shadow:0 4px 18px rgba(13,148,136,.5)}
+.voice-trigger.vibrate{animation:vib .3s ease-in-out infinite alternate}
+.voice-trigger.speaking{animation:speakPulse 1s ease-in-out infinite}
+@keyframes vib{0%{transform:rotate(-3deg) scale(1.05)}100%{transform:rotate(3deg) scale(1.05)}}
+@keyframes speakPulse{0%,100%{box-shadow:0 3px 12px rgba(13,148,136,.4)}50%{box-shadow:0 3px 20px rgba(13,148,136,.7),0 0 35px rgba(124,58,237,.2)}}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.card{background:#fff;border:1px solid #e2e8f0;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);position:relative}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.card-title{font-size:11px;font-weight:400;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.card-actions{display:flex;gap:6px;align-items:center}
+.card-toggle{font-size:8px;padding:2px 8px;border:1px solid #cbd5e1;background:#fff;color:#64748b;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.card-toggle.active{background:#0d9488;color:#fff;border-color:#0d9488}
+.card-info{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid #e2e8f0;color:#cbd5e1;font-size:13px;cursor:pointer;transition:all .25s;background:#fff}
+.card-info:hover{color:#f59e0b;border-color:#f59e0b;background:#fffbeb}
+.chart-wrap{position:relative;height:240px}
+.info-pop{display:none;position:absolute;top:40px;right:0;width:320px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:18px 20px;z-index:999;font-size:10px;line-height:1.6;color:#475569}
+.info-pop.show{display:block}
+.info-pop h4{font-size:9px;font-weight:400;color:#1e293b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.info-pop .tip-action{margin-top:8px;padding:6px 10px;background:#f0fdf4;border-left:3px solid #16a34a;font-size:9px;color:#166534}
+.pareto-section{background:#fff;border:1px solid #e2e8f0;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px;position:relative}
+.pareto-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pareto-header select{border:1.5px solid #cbd5e1;padding:5px 10px;font-size:10px;font-family:'Inter',sans-serif;outline:none;background:#fff;color:#1e293b}
+.pareto-chart-wrap{position:relative;height:300px;margin-bottom:12px}
+.pareto-insight{background:#f0f9ff;border:1px solid #bae6fd;padding:10px 14px;font-size:11px;color:#0c4a6e;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pareto-insight i{color:#0284c7;font-size:14px}
+.det-scroll{max-height:250px;overflow-y:auto;border:1px solid #e2e8f0}
+.det-table{width:100%;border-collapse:collapse;font-size:10px}
+.det-table th{background:#f1f5f9;font-size:8.5px;font-weight:400;color:#64748b;text-transform:uppercase;padding:5px 8px;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;white-space:nowrap}
+.det-table td{padding:4px 8px;border-bottom:1px solid #f1f5f9;color:#475569}
+.det-table tbody tr:nth-child(even){background:#f8fafc}
+.det-table tbody tr:hover td{background:#f0fdfa}
+.det-table .mono{font-family:'Courier New',monospace}
+.det-table .r{text-align:right}.det-table .c{text-align:center}
+.det-table .pos{color:#16a34a}.det-table .neg{color:#dc2626}
+.det-table .cut{background:#fef3c7 !important}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;width:720px;max-width:95vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(135deg,#1e293b,#334155);color:#f8fafc}
+.modal-header h2{font-size:12px;font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+.modal-close{background:none;border:1.5px solid #94a3b8;color:#94a3b8;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:14px}
+.modal-close:hover{border-color:#ef4444;color:#ef4444}
+.modal-body{flex:1;overflow-y:auto;padding:20px}
+.rec-card{border:1px solid #e2e8f0;margin-bottom:12px;padding:18px 20px}.rec-card:hover{background:#f8fafc}
+.rec-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#0d9488;color:#fff;font-size:9px;font-weight:700;margin-right:8px}
+.rec-title{font-size:11px;font-weight:400;color:#1e293b}
+.rec-section{margin-top:8px;font-size:10px;line-height:1.6;color:#475569}
+.rec-section strong{color:#1e293b;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.rec-section.expected{background:#f0fdf4;border-left:3px solid #16a34a;padding:6px 10px;margin-top:6px;color:#166534}
+.voice-dialog{position:fixed;bottom:86px;right:24px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:16px 20px;width:340px;max-width:90vw;z-index:10001;display:none;font-size:12px;line-height:1.6;color:#1e293b}
+.voice-dialog.show{display:block}
+.voice-dialog p{margin-bottom:12px}
+.voice-dialog-btns{display:flex;gap:8px}
+.voice-dialog-btns button{padding:6px 20px;font-size:10px;font-weight:600;border:1.5px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;text-transform:uppercase;letter-spacing:.04em}
+.voice-dialog-btns button:hover{background:#0d9488;color:#fff;border-color:#0d9488}
+.voice-dialog-btns .btn-no:hover{background:#94a3b8;border-color:#94a3b8}
+.dash-loading{text-align:center;padding:60px;color:#94a3b8;font-size:11px}
+.dash-loading .sp{display:inline-block;width:20px;height:20px;border:2px solid #e2e8f0;border-top-color:#0d9488;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:1200px){.kpi-row{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:800px){.kpi-row{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+    <h1><i class="fas fa-chart-line" style="font-size:13px;margin-right:8px;opacity:.7;"></i> Dashboard</h1>
+    
+</div>
+<div class="main">
+    <div class="dash-loading" id="dashLoading"><span class="sp"></span> Carregando dados do Firebase...</div>
+    <div id="dashContent" style="display:none;">
+        <div class="filter-bar">
+            <button class="fbtn" onclick="setPeriodo(-1,this)">Mês Atual</button>
+            <button class="fbtn" onclick="setPeriodo(7,this)">7 dias</button>
+            <button class="fbtn" onclick="setPeriodo(30,this)">30 dias</button>
+            <button class="fbtn" onclick="setPeriodo(90,this)">90 dias</button>
+            <button class="fbtn active" onclick="setPeriodo(0,this)">Tudo</button>
+            <button class="fbtn fbtn-refresh" onclick="carregarDados()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+        </div>
+        <div class="kpi-row">
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-dollar-sign" style="margin-right:2px;"></i> Faturamento</div><div class="kpi-value" id="kFat">—</div><div class="kpi-sub" id="kFatSub"></div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-arrow-trend-up" style="margin-right:2px;"></i> Lucro</div><div class="kpi-value" id="kLuc">—</div><div class="kpi-sub" id="kLucSub"></div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-percent" style="margin-right:2px;"></i> Margem</div><div class="kpi-value" id="kMar">—</div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-file-invoice" style="margin-right:2px;"></i> Pedidos</div><div class="kpi-value" id="kPed">—</div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-users" style="margin-right:2px;"></i> Clientes</div><div class="kpi-value" id="kCli">—</div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-clock" style="margin-right:2px;"></i> Pendentes</div><div class="kpi-value neg" id="kPen">—</div><div class="kpi-sub" id="kPenSub"></div></div>
+            <div class="kpi"><div class="kpi-label"><i class="fas fa-ticket" style="margin-right:2px;"></i> Ticket Médio</div><div class="kpi-value" id="kTkt">—</div></div>
+            <div class="kpi kpi-action" onclick="abrirAcoes()">
+                <div class="voice-trigger" id="voiceTrigger" onclick="event.stopPropagation();iniciarConversaVoz()"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;"><rect x="4" y="15" width="5" height="10" rx="1" fill="none" stroke="white" stroke-width="1.3"/><polygon points="9,15 18,8 18,32 9,25" fill="none" stroke="white" stroke-width="1.3" stroke-linejoin="round"/><path d="M22 14.5Q25.5 20 22 25.5" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round"/><path d="M26 11Q31 20 26 29" fill="none" stroke="white" stroke-width="1.1" stroke-linecap="round"/><path d="M30 7.5Q36.5 20 30 32.5" fill="none" stroke="white" stroke-width="1.0" stroke-linecap="round"/></svg></div>
+                <div class="kpi-label"><i class="fas fa-bolt" style="margin-right:2px;"></i> Ações</div><div class="kpi-value" id="kAcoes">—</div><div class="kpi-sub">Clique para ver</div>
+            </div>
+        </div>
+        <div class="row2">
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-chart-bar" style="margin-right:4px;"></i> Faturamento vs Custo</span><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="fatcusto"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-fatcusto"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4>As barras azuis representam o faturamento bruto e as vermelhas o custo direto de aquisição. A diferença entre ambas corresponde ao lucro bruto do período. Observe a evolução mês a mês: uma tendência de aproximação entre as barras indica compressão de margem, o que exige atenção imediata à política de preços ou à renegociação com fornecedores. Meses em que o custo supera o faturamento representam prejuízo operacional e devem ser investigados com prioridade.<div class="tip-action"><strong>&#9889;</strong> Se o custo cresce mais rápido que o faturamento, priorize a renegociação de condições comerciais com fornecedores-chave e avalie a substituição de itens com custo desproporcional. Se o faturamento está estagnado, intensifique ações de prospecção, reativação de clientes inativos e campanhas de venda cruzada para ampliar a receita sem depender exclusivamente de reajuste de preços.</div></div><div class="chart-wrap"><canvas id="chFatCusto"></canvas></div></div>
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-chart-line" style="margin-right:4px;"></i> Lucro e Margem</span><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="lucro"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-lucro"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4>A linha verde representa o lucro absoluto em reais e a linha amarela tracejada indica a margem percentual sobre o faturamento. Quando o lucro sobe mas a margem cai, significa que o volume de vendas aumentou, porém a rentabilidade por real vendido diminuiu — situação que exige atenção estratégica. O cenário ideal é que ambas as linhas apresentem tendência de alta simultânea, sinalizando crescimento com eficiência.<div class="tip-action"><strong>&#9889;</strong> Se a margem apresenta tendência de queda, conduza uma revisão estruturada da tabela de preços, priorizando os produtos de maior giro. Avalie se houve aumento de custos não repassados ao cliente e considere a implementação de reajustes graduais para preservar a competitividade sem sacrificar a rentabilidade. Margens abaixo de 15% devem acionar um plano de contingência imediato.</div></div><div class="chart-wrap"><canvas id="chLucro"></canvas></div></div>
+        </div>
+        <div class="row2">
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-trophy" style="margin-right:4px;"></i> Top 10 Produtos</span><div class="card-actions"><span class="card-toggle active" onclick="setTopProdMode('qtde',this)">Volume</span><span class="card-toggle" onclick="setTopProdMode('fat',this)">Fat.</span><span class="card-info" onclick="toggleInfo(this)" data-info="topprod"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-topprod"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4><b>Volume:</b> exibe os 10 produtos com maior quantidade vendida, indicando os itens de maior giro operacional. <b>Faturamento:</b> exibe os 10 produtos que mais geraram receita, revelando os itens de maior impacto financeiro. Nem sempre o produto mais vendido é o que mais fatura — essa comparação é essencial para identificar oportunidades de mix e priorizar esforços comerciais de forma inteligente.<div class="tip-action"><strong>&#9889;</strong> Garanta estoque permanente dos Top 10 para evitar rupturas que comprometam o faturamento. Utilize o poder de barganha que o alto volume proporciona para renegociar melhores condições de compra com fornecedores. Produtos que lideram em volume mas não em faturamento podem indicar oportunidade de reajuste de preço sem risco significativo de perda de demanda.</div></div><div class="chart-wrap"><canvas id="chTopProd"></canvas></div></div>
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-bullseye" style="margin-right:4px;"></i> Distribuição de Margem</span><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="margem"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-margem"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4><span style="color:#16a34a;">&#9679;</span> <b>Saudável (≥30%):</b> produtos com boa rentabilidade e contribuição positiva consistente para o resultado da operação. <span style="color:#f59e0b;">&#9679;</span> <b>Atenção (10-30%):</b> produtos que geram lucro, mas com margem apertada e vulnerável a variações de custo ou câmbio. <span style="color:#ef4444;">&#9679;</span> <b>Crítica (&lt;10%):</b> produtos que praticamente não remuneram o capital investido e podem estar gerando prejuízo oculto quando considerados custos indiretos de armazenagem, logística e manuseio.<div class="tip-action"><strong>&#9889;</strong> Produtos na faixa crítica exigem ação imediata: avalie reajuste de preço para margem mínima de 15%, renegociação do custo de aquisição com fornecedores ou, em último caso, descontinuação planejada do item. Concentre esforços comerciais nos produtos da faixa saudável, que oferecem melhor retorno por unidade vendida e sustentam a saúde financeira do negócio.</div></div><div class="chart-wrap"><canvas id="chMargem"></canvas></div></div>
+        </div>
+        <div class="row2">
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-users" style="margin-right:4px;"></i> Top 5 Clientes</span><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="topcli"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-topcli"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4>Este gráfico revela o grau de concentração da carteira de clientes. Quando um único cliente representa mais de 50% do faturamento, o negócio está exposto a um risco elevado de dependência comercial. A perda ou redução de pedidos desse cliente, por qualquer motivo, pode comprometer a sustentabilidade financeira da operação de forma abrupta e significativa, afetando fluxo de caixa e capacidade de investimento.<div class="tip-action"><strong>&#9889;</strong> Implemente uma estratégia de diversificação ativa: estabeleça como meta que nenhum cliente represente mais de 30% do faturamento. Fortaleça o relacionamento com os maiores compradores por meio de condições diferenciadas e atendimento consultivo, e invista na prospecção contínua de novos clientes para diluir o risco e ampliar a base de receita recorrente.</div></div><div class="chart-wrap"><canvas id="chTopCli"></canvas></div></div>
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fas fa-credit-card" style="margin-right:4px;"></i> Pagamentos</span><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="pago"><i class="far fa-lightbulb"></i></span></div></div><div class="info-pop" id="info-pago"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Como interpretar</h4>A fatia verde representa o valor já recebido e a vermelha o montante ainda pendente de pagamento. Uma proporção elevada de valores pendentes compromete diretamente o fluxo de caixa e pode gerar necessidade de capital de giro adicional, elevando custos financeiros e limitando a capacidade de reposição de estoque e investimento em crescimento.<div class="tip-action"><strong>&#9889;</strong> Estabeleça uma política de cobrança preventiva com régua automatizada, priorizando os maiores valores em aberto. Considere condicionar novos pedidos à regularização de débitos anteriores. Para clientes recorrentes com histórico de atraso, avalie a exigência de pagamento antecipado ou a redução dos prazos concedidos, protegendo a liquidez da operação.</div></div><div class="chart-wrap"><canvas id="chPago"></canvas></div></div>
+        </div>
+        <div class="pareto-section">
+            <div class="card-header" style="margin-bottom:12px;"><div class="pareto-header" style="margin:0;"><span class="card-title"><i class="fas fa-filter" style="margin-right:4px;"></i> Pareto 80/20</span><select id="paretoSelect" onchange="renderPareto()"><option value="fatProd">Faturamento por Produto</option><option value="lucProd">Lucro por Produto</option><option value="fatCli">Faturamento por Cliente</option><option value="margInv">Invertido — Margens Críticas</option><option value="custoNF">Custo por NF</option></select></div><div class="card-actions"><span class="card-info" onclick="toggleInfo(this)" data-info="pareto"><i class="far fa-lightbulb"></i></span></div></div>
+            <div class="info-pop" id="info-pareto"><h4><i class="far fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i> Análise de Pareto (80/20)</h4>O princípio de Pareto demonstra que, tipicamente, 20% dos itens são responsáveis por 80% dos resultados. Os itens destacados em roxo forte pertencem à zona dos 80% — são os que mais contribuem para o indicador selecionado e sustentam o resultado do negócio. Os itens em cinza representam a cauda longa, com contribuição marginal e individual pouco expressiva.<div class="tip-action"><strong>&#9889;</strong> Direcione recursos, atenção gerencial e esforço comercial prioritariamente aos itens da zona 80%. São eles que sustentam a receita e o lucro. Para os itens da cauda longa, avalie se o custo de mantê-los no portfólio justifica sua contribuição real, e considere simplificar o mix de produtos para ganhar eficiência operacional e reduzir complexidade logística.</div></div>
+            <div class="pareto-insight" id="paretoInsight"><i class="fas fa-lightbulb"></i> <span id="paretoInsightText">Carregando...</span></div>
+            <div class="pareto-chart-wrap"><canvas id="chPareto"></canvas></div>
+            <div class="det-scroll"><table class="det-table"><thead id="paretoTHead"></thead><tbody id="paretoTBody"></tbody></table></div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="modalAcoes"><div class="modal-box"><div class="modal-header"><h2><i class="fas fa-bolt" style="margin-right:8px;"></i> Ações Prioritárias</h2><button class="modal-close" onclick="fecharAcoes()">&#10005;</button></div><div class="modal-body" id="modalAcoesBody"></div></div></div>
+<div class="voice-dialog" id="voiceDialog"><p id="voiceDialogText"></p><div class="voice-dialog-btns" id="voiceDialogBtns"></div></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,collection,getDocs}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",authDomain:"silferssolucoes.firebaseapp.com",projectId:"silferssolucoes",storageBucket:"silferssolucoes.firebasestorage.app",messagingSenderId:"923480581130",appId:"1:923480581130:web:9c3e4d8ccab43354c16bf3"});
+const db=getFirestore(app);
+window._db=db;window._collection=collection;window._getDocs=getDocs;window._fbReady=true;window.dispatchEvent(new Event('fbReady'));
+</script>
+<script>
+var fmtBR=function(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
+var r2=function(v){return Math.round(v*100)/100;};
+var _allPedidos=[],_allProdutos=[],_filteredPedidos=[],_periodoAtual=0,_topProdMode='qtde',charts={},_recomendacoes=[];
+function pl(n,singular,plural){return n===1?singular:plural;}
+function fmtPctSmart(v){if(!isFinite(v))return '0%';var rv=Math.round(v*10)/10;return rv===Math.floor(rv)?Math.floor(rv)+'%':rv.toFixed(1)+'%';}
+
+function toggleInfo(el){var id='info-'+el.getAttribute('data-info');var p=document.getElementById(id);if(!p)return;document.querySelectorAll('.info-pop.show').forEach(function(x){if(x.id!==id)x.classList.remove('show');});p.classList.toggle('show');}
+document.addEventListener('click',function(e){if(!e.target.closest('.card-info')&&!e.target.closest('.info-pop'))document.querySelectorAll('.info-pop.show').forEach(function(p){p.classList.remove('show');});});
+
+async function carregarDados(){
+    document.getElementById('dashLoading').style.display='block';document.getElementById('dashContent').style.display='none';
+    try{if(!window._fbReady)await new Promise(function(r){window.addEventListener('fbReady',r,{once:true});});
+    var res=await Promise.all([window._getDocs(window._collection(window._db,'pedidos')),window._getDocs(window._collection(window._db,'produtos'))]);
+    _allPedidos=[];res[0].forEach(function(d){var p=d.data(),t=p.totais||{},it=p.itens||[];var v=parseFloat(t.vlTotal)||0,c=it.reduce(function(s,x){return s+(parseFloat(x.custoTotal)||0);},0),l=parseFloat(t.lucroLiquido)||r2(v-c);
+    _allPedidos.push({id:d.id,numPedido:p.numeroPedido||d.id,dataPedido:p.dataPedido||'',dataISO:p.dataISO||'',cliente:(p.cliente||{}).nome||'',venda:v,custo:c,lucro:l,margem:v>0?r2(l/v*100):0,pago:p.pago===true,vencimento:(p.rodape||{}).prazoPgto||(p.rodape||{}).vencimento||'',itens:it});});
+    _allProdutos=[];res[1].forEach(function(d){_allProdutos.push(Object.assign({id:d.id},d.data()));});
+    aplicarFiltro();document.getElementById('dashLoading').style.display='none';document.getElementById('dashContent').style.display='block';
+    }catch(e){document.getElementById('dashLoading').innerHTML='<span style="color:#ef4444;">Erro: '+e.message+'</span>';}
+}
+function setPeriodo(d,b){_periodoAtual=d;document.querySelectorAll('.fbtn').forEach(function(x){x.classList.remove('active');});if(b)b.classList.add('active');aplicarFiltro();}
+function aplicarFiltro(){
+    if(_periodoAtual===-1){var nw=new Date(),y=nw.getFullYear(),m=nw.getMonth();_filteredPedidos=_allPedidos.filter(function(p){var d=null;if(p.dataISO)d=new Date(p.dataISO);else if(p.dataPedido){var pt=p.dataPedido.split('/');if(pt.length===3)d=new Date(pt[2],pt[1]-1,pt[0]);}return d&&d.getFullYear()===y&&d.getMonth()===m;});}
+    else if(_periodoAtual>0){var lim=new Date();lim.setDate(lim.getDate()-_periodoAtual);_filteredPedidos=_allPedidos.filter(function(p){if(p.dataISO)return new Date(p.dataISO)>=lim;if(p.dataPedido){var pt=p.dataPedido.split('/');if(pt.length===3)return new Date(pt[2],pt[1]-1,pt[0])>=lim;}return true;});}
+    else _filteredPedidos=_allPedidos.slice();
+    renderKPIs();renderCharts();renderPareto();gerarRecomendacoes();
+}
+function renderKPIs(){
+    var ps=_filteredPedidos,fat=0,luc=0,cs={};ps.forEach(function(p){fat+=p.venda;luc+=p.lucro;if(p.cliente)cs[p.cliente]=1;});
+    var mar=fat>0?r2(luc/fat*100):0,pn=ps.filter(function(p){return!p.pago;}),pV=pn.reduce(function(s,p){return s+p.venda;},0);
+    document.getElementById('kFat').textContent='R$ '+fmtBR(fat);document.getElementById('kFatSub').textContent=ps.length+' ped.';
+    var le=document.getElementById('kLuc');le.textContent='R$ '+fmtBR(luc);le.className='kpi-value '+(luc>=0?'pos':'neg');
+    document.getElementById('kLucSub').textContent=mar.toFixed(1)+'%';document.getElementById('kMar').textContent=mar.toFixed(1)+'%';
+    document.getElementById('kPed').textContent=ps.length;document.getElementById('kCli').textContent=Object.keys(cs).length;
+    document.getElementById('kPen').textContent=pn.length;document.getElementById('kPenSub').textContent='R$ '+fmtBR(pV);
+    document.getElementById('kTkt').textContent='R$ '+fmtBR(ps.length>0?r2(fat/ps.length):0);
+}
+function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+function getProdMap(){var pm={};_filteredPedidos.forEach(function(p){p.itens.forEach(function(it){var k=it.desc||it.cod||'?';if(!pm[k])pm[k]={venda:0,lucro:0,custo:0,qtde:0};pm[k].venda+=it.vlTotal||0;pm[k].lucro+=it.lucro||0;pm[k].custo+=it.custoTotal||0;pm[k].qtde+=(it.qtde||0);});});return pm;}
+function setTopProdMode(m,b){_topProdMode=m;b.parentElement.querySelectorAll('.card-toggle').forEach(function(x){x.classList.remove('active');});b.classList.add('active');renderTopProd();}
+function renderTopProd(){var pm=getProdMap(),sk=_topProdMode==='fat'?'venda':'qtde',isQ=_topProdMode==='qtde';var tp=Object.entries(pm).sort(function(a,b){return b[1][sk]-a[1][sk];}).slice(0,10);destroyChart('topProd');charts.topProd=new Chart(document.getElementById('chTopProd'),{type:'bar',data:{labels:tp.map(function(x){return x[0].substring(0,25);}),datasets:[{label:isQ?'Quantidade':'Faturamento',data:tp.map(function(x){return isQ?x[1].qtde:r2(x[1].venda);}),backgroundColor:'rgba(13,148,136,.65)',borderColor:'#0d9488',borderWidth:1}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){var p=tp[c.dataIndex];return['Qtde: '+p[1].qtde+' un','Fat.: R$ '+fmtBR(p[1].venda)];}}},legend:{display:false}},scales:{x:{ticks:{font:{size:9},callback:function(v){return isQ?v+' un':'R$'+fmtBR(v);}}},y:{ticks:{font:{size:8}}}}}});}
+
+function renderCharts(){
+    var map={};_filteredPedidos.forEach(function(p){var ms='Outros';if(p.dataISO){var d=new Date(p.dataISO);ms=d.toLocaleDateString('pt-BR',{year:'2-digit',month:'short'});}else if(p.dataPedido){var pt=p.dataPedido.split('/');if(pt.length===3)ms=new Date(pt[2],pt[1]-1,1).toLocaleDateString('pt-BR',{year:'2-digit',month:'short'});}if(!map[ms])map[ms]={f:0,c:0,l:0};map[ms].f+=p.venda;map[ms].c+=p.custo;map[ms].l+=p.lucro;});
+    var lb=Object.keys(map),ft=lb.map(function(l){return r2(map[l].f);}),ct=lb.map(function(l){return r2(map[l].c);}),lc=lb.map(function(l){return r2(map[l].l);}),mg=lb.map(function(l){return map[l].f>0?r2(map[l].l/map[l].f*100):0;});
+    var ttR={callbacks:{label:function(c){return c.dataset.label+': R$ '+fmtBR(c.parsed.y||c.parsed.x||c.raw);}}};
+    destroyChart('fatCusto');charts.fatCusto=new Chart(document.getElementById('chFatCusto'),{type:'bar',data:{labels:lb,datasets:[{label:'Faturamento',data:ft,backgroundColor:'rgba(13,148,136,.7)',borderColor:'#0d9488',borderWidth:1},{label:'Custo',data:ct,backgroundColor:'rgba(239,68,68,.5)',borderColor:'#ef4444',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:ttR,legend:{labels:{font:{size:10}}}},scales:{y:{ticks:{font:{size:9},callback:function(v){return'R$'+fmtBR(v);}}},x:{ticks:{font:{size:9}}}}}});
+    destroyChart('lucro');charts.lucro=new Chart(document.getElementById('chLucro'),{type:'line',data:{labels:lb,datasets:[{label:'Lucro R$',data:lc,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.3,yAxisID:'y'},{label:'Margem %',data:mg,borderColor:'#f59e0b',borderDash:[5,3],tension:.3,yAxisID:'y1',pointStyle:'rectRot'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.yAxisID==='y1'?c.dataset.label+': '+c.raw.toFixed(1)+'%':c.dataset.label+': R$ '+fmtBR(c.raw);}}},legend:{labels:{font:{size:10}}}},scales:{y:{position:'left',ticks:{font:{size:9},callback:function(v){return'R$'+fmtBR(v);}}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:9},callback:function(v){return v+'%';}}},x:{ticks:{font:{size:9}}}}}});
+    renderTopProd();
+    var pm=getProdMap(),mb={s:0,a:0,c:0};Object.values(pm).forEach(function(v){var m=v.venda>0?(v.lucro/v.venda*100):0;if(m>=30)mb.s++;else if(m>=10)mb.a++;else mb.c++;});
+    destroyChart('margem');charts.margem=new Chart(document.getElementById('chMargem'),{type:'doughnut',data:{labels:['Saudável (≥30%)','Atenção (10-30%)','Crítica (<10%)'],datasets:[{data:[mb.s,mb.a,mb.c],backgroundColor:['#16a34a','#f59e0b','#ef4444'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){var t=mb.s+mb.a+mb.c;return c.label+': '+c.raw+' ('+(t>0?(c.raw/t*100).toFixed(0):0)+'%)';}}},legend:{position:'bottom',labels:{font:{size:10}}}}}});
+    var cm={};_filteredPedidos.forEach(function(p){if(!p.cliente)return;if(!cm[p.cliente])cm[p.cliente]=0;cm[p.cliente]+=p.venda;});var tc=Object.entries(cm).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    destroyChart('topCli');charts.topCli=new Chart(document.getElementById('chTopCli'),{type:'bar',data:{labels:tc.map(function(x){return x[0].substring(0,25);}),datasets:[{label:'Faturamento',data:tc.map(function(x){return r2(x[1]);}),backgroundColor:'rgba(14,165,233,.65)',borderColor:'#0ea5e9',borderWidth:1}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{tooltip:ttR,legend:{display:false}},scales:{x:{ticks:{font:{size:9},callback:function(v){return'R$'+fmtBR(v);}}},y:{ticks:{font:{size:9}}}}}});
+    var pg=_filteredPedidos.filter(function(p){return p.pago;}),pd=_filteredPedidos.filter(function(p){return!p.pago;});var vP=pg.reduce(function(s,p){return s+p.venda;},0),vN=pd.reduce(function(s,p){return s+p.venda;},0);
+    destroyChart('pago');charts.pago=new Chart(document.getElementById('chPago'),{type:'doughnut',data:{labels:['Pago (R$ '+fmtBR(vP)+')','Pendente (R$ '+fmtBR(vN)+')'],datasets:[{data:[vP,vN],backgroundColor:['#16a34a','#ef4444'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+}
+
+function renderPareto(){
+    var tipo=document.getElementById('paretoSelect').value,items=[],lk='Item',vk='Valor',pf='R$ ';
+    var pm=getProdMap();Object.keys(pm).forEach(function(k){pm[k].margem=pm[k].venda>0?r2(pm[k].lucro/pm[k].venda*100):0;});
+    if(tipo==='fatProd'){items=Object.entries(pm).map(function(e){return{l:e[0],v:e[1].venda};}).sort(function(a,b){return b.v-a.v;});lk='Produto';vk='Faturamento';}
+    else if(tipo==='lucProd'){items=Object.entries(pm).map(function(e){return{l:e[0],v:e[1].lucro};}).sort(function(a,b){return b.v-a.v;});lk='Produto';vk='Lucro';}
+    else if(tipo==='fatCli'){var cm={};_filteredPedidos.forEach(function(p){if(!p.cliente)return;if(!cm[p.cliente])cm[p.cliente]=0;cm[p.cliente]+=p.venda;});items=Object.entries(cm).map(function(e){return{l:e[0],v:e[1]};}).sort(function(a,b){return b.v-a.v;});lk='Cliente';vk='Faturamento';}
+    else if(tipo==='margInv'){items=Object.entries(pm).map(function(e){return{l:e[0],v:e[1].margem};}).filter(function(x){return x.v<30;}).sort(function(a,b){return a.v-b.v;});lk='Produto';vk='Margem %';pf='';}
+    else if(tipo==='custoNF'){var nm={};_allProdutos.forEach(function(p){var k=p.doc||p.nf||'Sem NF';if(!nm[k])nm[k]=0;nm[k]+=parseFloat(p.custoReal)||parseFloat(p.vlUnit)||0;});items=Object.entries(nm).map(function(e){return{l:e[0],v:e[1]};}).sort(function(a,b){return b.v-a.v;});lk='NF';vk='Custo';}
+    if(!items.length){document.getElementById('paretoInsightText').textContent='Sem dados.';destroyChart('pareto');document.getElementById('paretoTHead').innerHTML='';document.getElementById('paretoTBody').innerHTML='';return;}
+    var tot=items.reduce(function(s,x){return s+Math.abs(x.v);},0),ac=0;items.forEach(function(x){ac+=Math.abs(x.v);x.p=tot>0?r2(Math.abs(x.v)/tot*100):0;x.a=tot>0?r2(ac/tot*100):0;});
+    var c8=-1;for(var i=0;i<items.length;i++){if(items[i].a>=80){c8=i;break;}}var n8=c8>=0?c8+1:items.length;
+    document.getElementById('paretoInsightText').textContent=tipo==='margInv'?items.length+' produtos com margem < 30%':n8+' itens ('+r2(n8/items.length*100).toFixed(0)+'%) = 80% do total de '+pf+fmtBR(tot);
+    var t30=items.slice(0,30);destroyChart('pareto');
+    charts.pareto=new Chart(document.getElementById('chPareto'),{type:'bar',data:{labels:t30.map(function(x){return x.l.substring(0,22);}),datasets:[{label:vk,data:t30.map(function(x){return r2(x.v);}),backgroundColor:t30.map(function(x){return x.a<=80?'rgba(13,148,136,.7)':'rgba(148,163,184,.4)';}),borderColor:t30.map(function(x){return x.a<=80?'#0d9488':'#94a3b8';}),borderWidth:1,yAxisID:'y',order:2},{label:'% Acum.',data:t30.map(function(x){return x.a;}),type:'line',borderColor:'#f59e0b',backgroundColor:'transparent',tension:.3,pointRadius:2,yAxisID:'y1',order:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){return c.datasetIndex===1?'Acumulado: '+c.raw.toFixed(1)+'%':vk+': '+(tipo==='margInv'?c.raw.toFixed(1)+'%':pf+fmtBR(c.raw));}}},legend:{labels:{font:{size:10}}}},scales:{y:{position:'left',ticks:{font:{size:9},callback:function(v){return tipo==='margInv'?v+'%':pf+fmtBR(v);}}},y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false},ticks:{font:{size:9},callback:function(v){return v+'%';}}},x:{ticks:{font:{size:7},maxRotation:45}}}}});
+    document.getElementById('paretoTHead').innerHTML='<tr><th class="c">#</th><th>'+lk+'</th><th class="r">'+vk+'</th><th class="r">%</th><th class="r">Acum.</th></tr>';
+    var tb='';items.forEach(function(x,i){var cut=i>0&&items[i-1].a<80&&x.a>=80;tb+='<tr class="'+(cut?'cut':'')+'"><td class="c mono">'+(i+1)+'</td><td>'+x.l+'</td><td class="r mono">'+(tipo==='margInv'?x.v.toFixed(1)+'%':pf+fmtBR(x.v))+'</td><td class="r mono">'+x.p.toFixed(1)+'%</td><td class="r mono'+(x.a>=80?' pos':'')+'">'+x.a.toFixed(1)+'%</td></tr>';});
+    document.getElementById('paretoTBody').innerHTML=tb;
+}
+
+// ═══ RECOMENDAÇÕES (BI DINÂMICO) ═══
+function getPedidoDate(p){
+  try{
+    if(p&&p.dataISO){var d=new Date(p.dataISO);if(!isNaN(d.getTime()))return d;}
+    if(p&&p.dataPedido){var pt=(p.dataPedido+'').split('/');if(pt.length===3){var d2=new Date(parseInt(pt[2],10),parseInt(pt[1],10)-1,parseInt(pt[0],10));if(!isNaN(d2.getTime()))return d2;}}
+  }catch(e){}
+  return null;
+}
+function clamp(n,mn,mx){return Math.max(mn,Math.min(mx,n));}
+function deltaPct(cur,prev){if(!prev)return 0;return((cur-prev)/prev)*100;}
+function ppDiff(cur,prev){return cur-prev;}
+function fmtPctDyn(v,dec){dec=(dec==null?1:dec);return(isFinite(v)?v.toFixed(dec):'0.0')+'%';}
+function _parseVenc(s){
+  if(!s)return null;s=String(s).trim();
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){var pp=s.split('/');return new Date(+pp[2],+pp[1]-1,+pp[0]);}
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);
+  return null;
+}
+function calcKPIs(pedidos){
+  var fat=0,luc=0,cliMap={},pendCount=0,pendValor=0,aVencerCount=0,aVencerValor=0,prodMap={};
+  var hoje=new Date();hoje.setHours(0,0,0,0);
+  for(var i=0;i<pedidos.length;i++){
+    var p=pedidos[i];fat+=(p.venda||0);luc+=(p.lucro||0);
+    if(p.cliente)cliMap[p.cliente]=1;
+    if(!p.pago){
+      var vd=_parseVenc(p.vencimento);
+      if(vd && vd<hoje){pendCount++;pendValor+=(p.venda||0);}
+      else{aVencerCount++;aVencerValor+=(p.venda||0);}
+    }
+    var its=p.itens||[];
+    for(var j=0;j<its.length;j++){
+      var it=its[j],k=(it.desc||it.cod||'?');
+      if(!prodMap[k])prodMap[k]={venda:0,lucro:0,custo:0,qtde:0};
+      prodMap[k].venda+=(it.vlTotal||0);prodMap[k].lucro+=(it.lucro||0);
+      prodMap[k].custo+=(it.custoTotal||0);prodMap[k].qtde+=(it.qtde||0);
+    }
+  }
+  var mar=fat>0?r2(luc/fat*100):0,ticket=pedidos.length>0?r2(fat/pedidos.length):0;
+  var cm={};
+  for(var i2=0;i2<pedidos.length;i2++){var p2=pedidos[i2];if(!p2.cliente)continue;if(!cm[p2.cliente])cm[p2.cliente]=0;cm[p2.cliente]+=(p2.venda||0);}
+  var arrCli=Object.entries(cm).sort(function(a,b){return b[1]-a[1];});
+  var topCli=arrCli.length?arrCli[0][0]:null,topCliV=arrCli.length?arrCli[0][1]:0;
+  var topCliShare=fat>0?r2(topCliV/fat*100):0;
+  var arrProd=Object.entries(prodMap).sort(function(a,b){return(b[1].venda||0)-(a[1].venda||0);});
+  var top3=arrProd.slice(0,3),top3V=top3.reduce(function(s,e){return s+(e[1].venda||0);},0);
+  var top3Share=fat>0?r2(top3V/fat*100):0;
+  var crit=arrProd.filter(function(e){var v=(e[1].venda||0),l=(e[1].lucro||0);return v>0&&(l/v*100)<10;});
+  var critV=crit.reduce(function(s,e){return s+(e[1].venda||0);},0);
+  var critShare=fat>0?r2(critV/fat*100):0;
+  return{fat:fat,luc:luc,mar:mar,pedidos:pedidos.length,clientes:Object.keys(cliMap).length,pendCount:pendCount,pendValor:pendValor,ticket:ticket,topCli:topCli,topCliShare:topCliShare,top3ProdShare:top3Share,critProdCount:crit.length,critProdShare:critShare,_cm:arrCli,_prod:arrProd};
+}
+function getWindowForCurrentFilter(){
+  var now=new Date(),curStart=null,curEnd=new Date(now),prevStart=null,prevEnd=null;
+  if(_periodoAtual===-1){var y=now.getFullYear(),m=now.getMonth();curStart=new Date(y,m,1);prevStart=new Date(y,m-1,1);prevEnd=new Date(y,m,0,23,59,59,999);}
+  else if(_periodoAtual>0){curStart=new Date(now);curStart.setHours(0,0,0,0);curStart.setDate(curStart.getDate()-_periodoAtual);prevEnd=new Date(curStart.getTime()-1);prevStart=new Date(prevEnd);prevStart.setHours(0,0,0,0);prevStart.setDate(prevStart.getDate()-_periodoAtual);}
+  else{curStart=new Date(now);curStart.setHours(0,0,0,0);curStart.setDate(curStart.getDate()-30);prevEnd=new Date(curStart.getTime()-1);prevStart=new Date(prevEnd);prevStart.setHours(0,0,0,0);prevStart.setDate(prevStart.getDate()-30);}
+  curEnd.setHours(23,59,59,999);if(prevEnd)prevEnd.setHours(23,59,59,999);
+  return{curStart:curStart,curEnd:curEnd,prevStart:prevStart,prevEnd:prevEnd};
+}
+function filterPedidosByRange(pedidos,start,end){
+  var out=[];for(var i=0;i<pedidos.length;i++){var d=getPedidoDate(pedidos[i]);if(!d)continue;if(d>=start&&d<=end)out.push(pedidos[i]);}return out;
+}
+function buildTimeSeries(pedidos){
+  var map={};for(var i=0;i<pedidos.length;i++){var p=pedidos[i],d=getPedidoDate(p);if(!d)continue;var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');if(!map[key])map[key]={fat:0,custo:0,luc:0};map[key].fat+=(p.venda||0);map[key].custo+=(p.custo||0);map[key].luc+=(p.lucro||0);}
+  var keys=Object.keys(map).sort();return keys.map(function(k){var o=map[k];var mar=o.fat>0?(o.luc/o.fat*100):0;return{k:k,fat:r2(o.fat),custo:r2(o.custo),luc:r2(o.luc),mar:r2(mar)};});
+}
+function trendSlope(arr,key,n){
+  n=n||3;if(!arr||arr.length<2)return 0;var a=arr.slice(Math.max(0,arr.length-n));if(a.length<2)return 0;return(a[a.length-1][key]-a[0][key])/(a.length-1);
+}
+function addRec(list,rec){if(!rec)return;if(rec.impacto==null)rec.impacto=5;list.push(rec);}
+function gerarRecomendacoes(){
+  _recomendacoes=[];
+  var kV=calcKPIs(_filteredPedidos);
+  var w=getWindowForCurrentFilter();
+  var curWin=filterPedidosByRange(_allPedidos,w.curStart,w.curEnd);
+  var prevWin=(w.prevStart&&w.prevEnd)?filterPedidosByRange(_allPedidos,w.prevStart,w.prevEnd):[];
+  var kCur=calcKPIs(curWin),kPrev=calcKPIs(prevWin);
+  var serie=buildTimeSeries(_filteredPedidos);
+  var slopeFat=trendSlope(serie,'fat',4),slopeMar=trendSlope(serie,'mar',4);
+  var dFat=deltaPct(kCur.fat,kPrev.fat),dLuc=deltaPct(kCur.luc,kPrev.luc);
+  var dTkt=deltaPct(kCur.ticket,kPrev.ticket),dMarPP=ppDiff(kCur.mar,kPrev.mar);
+  // 1) Receita / tração comercial
+  if(prevWin.length>0){
+    if(dFat<-5){
+      addRec(_recomendacoes,{impacto:clamp(6+Math.min(4,Math.abs(dFat)/10),6,10),
+        t:'Recuperação imediata da tração comercial',
+        o:'O faturamento na janela atual recuou '+fmtPctDyn(Math.abs(dFat),1)+' em relação à janela anterior (de R$ '+fmtBR(kPrev.fat)+' para R$ '+fmtBR(kCur.fat)+'), sinalizando perda de ritmo de vendas no curto prazo.',
+        p:'A redução de receita, quando não acompanhada por uma queda proporcional de custos, tende a pressionar caixa e limitar a capacidade de reposição de estoque e investimento comercial. Em termos de gestão, trata-se de um sinal de enfraquecimento de pipeline ou de redução de frequência de compra da carteira atual.',
+        r:'Ao reativar clientes e intensificar prospecção com metas semanais e follow-up estruturado, espera-se recompor a curva de faturamento e ampliar a previsibilidade de receita, aumentando o volume de negócios sem depender exclusivamente de reajustes de preço.'});
+    }else if(dFat>8&&dMarPP<-1){
+      addRec(_recomendacoes,{impacto:clamp(7+Math.min(3,Math.abs(dMarPP)),7,10),
+        t:'Crescimento com compressão de margem (ajuste de mix e descontos)',
+        o:'O faturamento cresceu '+fmtPctDyn(dFat,1)+' (R$ '+fmtBR(kPrev.fat)+' \u2192 R$ '+fmtBR(kCur.fat)+'), porém a margem recuou '+Math.abs(dMarPP).toFixed(1)+' p.p. (de '+fmtPctSmart(kPrev.mar)+' para '+fmtPctSmart(kCur.mar)+').',
+        p:'Esse padrão indica aumento de volume sustentado por mix menos rentável, descontos acima do necessário ou repasse insuficiente de custos. Do ponto de vista de gestão, trata-se de um crescimento que amplia receita mas não maximiza resultado, reduzindo a eficiência do negócio por real vendido.',
+        r:'Ao ajustar política de descontos e priorizar produtos de maior contribuição, espera-se preservar o crescimento e recuperar margem, elevando o lucro absoluto sem sacrificar competitividade e ampliando a capacidade de investimento para expansão.'});
+    }
+  }
+  // Tendência negativa no gráfico
+  if(serie.length>=3&&slopeFat<0){
+    addRec(_recomendacoes,{impacto:clamp(6+Math.min(3,Math.abs(slopeFat)/Math.max(1,(kV.fat||1)/10)),6,9),
+      t:'Tendência de desaceleração no faturamento (sinal precoce)',
+      o:'A leitura da série mensal exibida no dashboard indica tendência de queda no faturamento recente, o que sugere desaceleração antes que o indicador se consolide no fechamento do período.',
+      p:'Antecipar ação diante de tendência é fundamental para reduzir inércia gerencial. Quanto mais cedo se atua sobre prospecção, reativação e conversão, menor o custo para recuperar receita e menor o risco de comprometer metas comerciais do ciclo.',
+      r:'Com ação antecipada, espera-se estabilizar a curva de faturamento e reverter a tendência, mantendo o crescimento do negócio e reduzindo volatilidade de receita.'});
+  }
+  // 2) Margem / eficiência
+  if(prevWin.length>0&&dMarPP<-1.5){
+    addRec(_recomendacoes,{impacto:clamp(7+Math.min(3,Math.abs(dMarPP)/2),7,10),
+      t:'Queda de eficiência comercial identificada (margem em deterioração)',
+      o:'A margem média recuou '+Math.abs(dMarPP).toFixed(1)+' p.p. na janela atual (de '+fmtPctSmart(kPrev.mar)+' para '+fmtPctSmart(kCur.mar)+'), mesmo com dinâmica de vendas ativa.',
+      p:'A deterioração de margem é, em geral, consequência de aumento de custos não repassados, mix desfavorável ou precificação desalinhada. Operar com margem decrescente reduz a capacidade de geração de caixa e aumenta a vulnerabilidade a oscilações de fornecedores, frete e tributos.',
+      r:'Ao revisar precificação e mix, priorizando itens de maior contribuição, espera-se recuperar margem e ampliar lucro, elevando a sustentabilidade financeira e suportando novas ações de expansão comercial.'});
+  }
+  if(serie.length>=3&&slopeMar<0){
+    addRec(_recomendacoes,{impacto:clamp(6.5+Math.min(2.5,Math.abs(slopeMar)),6,9),
+      t:'Compressão de margem na tendência mensal (controle preventivo)',
+      o:'A análise da curva de margem no gráfico indica trajetória descendente recente, sinalizando compressão gradual de rentabilidade.',
+      p:'Mesmo variações pequenas e persistentes na margem tendem a se traduzir em perda relevante de resultado no acumulado. A gestão preventiva evita que o efeito se consolide e preserva a eficiência da operação.',
+      r:'Ao atuar preventivamente com ajustes graduais de preço e renegociação com fornecedores, espera-se estabilizar a margem e sustentar crescimento com eficiência.'});
+  }
+  // 3) Liquidez — contas a receber
+  if(kV.pendCount>0){
+    var pctPend=kV.fat>0?(kV.pendValor/kV.fat*100):0;
+    addRec(_recomendacoes,{impacto:clamp(6+Math.min(4,pctPend/10),6,10),
+      t:'Recuperação de valores vencidos e proteção do fluxo de caixa',
+      o:(kV.pendCount===1?'Foi identificado ':'Foram identificados ')+kV.pendCount+' '+pl(kV.pendCount,'pedido','pedidos')+' com pagamento vencido, totalizando R$ '+fmtBR(kV.pendValor)+', equivalente a '+fmtPctSmart(r2(pctPend))+' do faturamento do período exibido.',
+      p:'Valores pendentes comprometem capital de giro e elevam o custo de oportunidade do negócio. A ausência de disciplina de cobrança tende a ampliar atrasos recorrentes, pressionando caixa e reduzindo a capacidade de compra e expansão.',
+      r:'Com régua de cobrança e condicionamento de novos pedidos à regularização, espera-se reduzir inadimplência, liberar caixa para recomposição de estoque e sustentar crescimento com menor necessidade de financiamento.'});
+  }
+  // 4) Concentração de clientes
+  if(kV.topCli&&kV.topCliShare>45){
+    addRec(_recomendacoes,{impacto:clamp(7+Math.min(3,(kV.topCliShare-45)/10),7,10),
+      t:'Diversificação prioritária da carteira de clientes',
+      o:'O cliente '+kV.topCli+' concentra '+fmtPctSmart(r2(kV.topCliShare))+' do faturamento do período exibido, caracterizando dependência comercial elevada.',
+      p:'Alta concentração reduz previsibilidade e poder de negociação e expõe o negócio a choques de receita caso haja queda de demanda, troca de fornecedor ou renegociação desfavorável. Do ponto de vista de gestão, diversificação é medida de resiliência e sustentabilidade.',
+      r:'Ao ampliar base de clientes e reduzir a participação do principal comprador, espera-se mitigar riscos, fortalecer poder de negociação e criar múltiplas frentes de crescimento de receita.'});
+  }
+  // 5) Concentração de produtos
+  if(kV.top3ProdShare>65){
+    addRec(_recomendacoes,{impacto:clamp(6.5+Math.min(3.5,(kV.top3ProdShare-65)/10),6,10),
+      t:'Gestão ativa de concentração do mix de produtos (risco e oportunidade)',
+      o:'Os três produtos líderes concentram aproximadamente '+fmtPctSmart(r2(kV.top3ProdShare))+' do faturamento do período, indicando alta dependência do resultado em poucos itens.',
+      p:'Esse cenário aumenta o risco de ruptura (estoque/fornecedor) e reduz robustez do portfólio. Ao mesmo tempo, evidencia oportunidade de ganhos rápidos: foco de negociação e ações comerciais nos itens líderes tende a produzir efeito financeiro significativo.',
+      r:'Ao garantir abastecimento e renegociar condições dos itens líderes, espera-se proteger receita e melhorar margem, ampliando resultado e reduzindo vulnerabilidades do negócio.'});
+  }
+  // 6) Produtos críticos (margem < 10%)
+  if(kV.critProdCount>=4&&kV.critProdShare>=10){
+    var exemplos=kV._prod.filter(function(e){var v=(e[1].venda||0),l=(e[1].lucro||0);return v>0&&(l/v*100)<10;}).slice(0,3).map(function(e){return e[0].substring(0,22);}).join(', ');
+    addRec(_recomendacoes,{impacto:clamp(7+Math.min(3,kV.critProdShare/10),7,10),
+      t:'Reestruturação de itens com margem crítica (recuperação de rentabilidade)',
+      o:(kV.critProdCount===1?'Há 1 produto':'Há '+kV.critProdCount+' produtos')+' com margem inferior a 10%, representando cerca de '+fmtPctSmart(r2(kV.critProdShare))+' do faturamento do período. '+pl(kV.critProdCount,'Exemplo','Exemplos')+': '+exemplos+'.',
+      p:'Manter '+pl(kV.critProdCount,'item','itens')+' de baixa contribuição consome estoque, capital e esforço operacional sem retorno proporcional, além de reduzir a eficiência do portfólio. Em gestão de resultados, '+pl(kV.critProdCount,'esse item tende','esses itens tendem')+' a inflar receita sem gerar lucro, dificultando crescimento sustentável.',
+      r:'Ao reajustar preços, renegociar custos ou descontinuar '+pl(kV.critProdCount,'item crítico','itens críticos')+', espera-se recuperar margem do portfólio e elevar lucro, liberando recursos para investir em produtos mais rentáveis e ampliar negócios.'});
+  }
+  // 7) Ticket médio
+  if(prevWin.length>0&&dTkt<-8&&kCur.pedidos>=5){
+    addRec(_recomendacoes,{impacto:clamp(6+Math.min(3,Math.abs(dTkt)/15),6,9),
+      t:'Elevação do ticket médio por estratégias de upsell e venda cruzada',
+      o:'O ticket médio recuou '+fmtPctDyn(Math.abs(dTkt),1)+' na janela atual (R$ '+fmtBR(kPrev.ticket)+' \u2192 R$ '+fmtBR(kCur.ticket)+'), sugerindo vendas menores por pedido.',
+      p:'Queda de ticket reduz eficiência comercial e aumenta custo relativo por venda. Para sustentar crescimento com qualidade, é recomendável elevar o valor por pedido com ofertas complementares e pacotes de valor.',
+      r:'Com ações de upsell e cross-sell (combos, mínimos por pedido, incentivos por volume), espera-se elevar ticket e margem, aumentando o faturamento e o lucro com o mesmo esforço operacional.'});
+  }
+  // 8) Volume baixo
+  if(_filteredPedidos.length>0&&_filteredPedidos.length<10){
+    addRec(_recomendacoes,{impacto:clamp(5+Math.min(4,(10-_filteredPedidos.length)),5,9),
+      t:'Ampliação do volume de vendas para diluição de custos fixos',
+      o:'O período analisado registra apenas '+_filteredPedidos.length+' '+pl(_filteredPedidos.length,'pedido','pedidos')+', um volume que limita severamente a capacidade de diluição dos custos fixos da operação.',
+      p:'A baixa volumetria geralmente indica oportunidades não exploradas de prospecção, reativação de clientes inativos ou aumento da frequência de compra dos clientes atuais. '+(_filteredPedidos.length===1?'Com apenas 1 pedido, a operação fica':'Operações com volume reduzido são')+' mais '+(_filteredPedidos.length===1?'vulnerável':'vulneráveis')+' a sazonalidades e cancelamentos.',
+      r:'Estabeleça metas semanais de prospecção e implemente uma rotina de follow-up com clientes que não compraram nos últimos 30 dias. Estratégias como ofertas de recompra, descontos progressivos por volume e programa de indicação podem elevar o número de pedidos em 30 a 50%, melhorando significativamente a diluição de custos fixos e a previsibilidade do faturamento.'});
+  }
+  // Priorização e limite
+  _recomendacoes.sort(function(a,b){return(b.impacto||0)-(a.impacto||0);});
+  _recomendacoes=_recomendacoes.slice(0,5);
+  document.getElementById('kAcoes').textContent=_recomendacoes.length;
+  var vt=document.getElementById('voiceTrigger');
+  if(_recomendacoes.length>0){vt.classList.add('show');vt.classList.add('vibrate');}
+  else{vt.classList.remove('show');vt.classList.remove('vibrate');}
+}
+function abrirAcoes(){
+    var body=document.getElementById('modalAcoesBody');
+    if(!_recomendacoes.length){body.innerHTML='<div style="text-align:center;padding:40px;color:#94a3b8;font-size:11px;">Nenhuma ação identificada. Parabéns!</div>';}
+    else{var h='';_recomendacoes.forEach(function(r,i){h+='<div class="rec-card"><div><span class="rec-num">'+(i+1)+'</span><span class="rec-title">'+r.t+'</span></div><div class="rec-section"><strong>O quê:</strong><br>'+r.o+'</div><div class="rec-section"><strong>Por quê:</strong><br>'+r.p+'</div><div class="rec-section expected"><strong>&#10003; Resultado esperado:</strong><br>'+r.r+'</div></div>';});body.innerHTML=h;}
+    document.getElementById('modalAcoes').classList.add('open');
+}
+function fecharAcoes(){document.getElementById('modalAcoes').classList.remove('open');if(window.speechSynthesis)window.speechSynthesis.cancel();}
+
+// ═══ VOICE — FIX: masculine, faster, natural R$ reading ═══
+function getGreeting(){var h=parseInt(new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'numeric',hour12:false}));if(h<12)return'Bom dia';if(h<18)return'Boa tarde';return'Boa noite';}
+function numPorExtensoFem(n){if(n===1)return'uma recomendação';if(n===2)return'duas recomendações';return n+' recomendações';}
+// FIX c: Don't replace R$ — let native TTS engine handle currency naturally
+function cleanTTS(t){return t.replace(/\(s\)/g,'s').replace(/\(es\)/g,'es').replace(/\(a\)/g,'a').replace(/—/g,', ').replace(/\n/g,'. ');}
+
+function falar(texto,onEnd){
+    var synth=window.speechSynthesis;if(!synth)return;synth.cancel();
+    var u=new SpeechSynthesisUtterance(cleanTTS(texto));
+    u.lang='pt-BR';u.rate=1.60;u.pitch=0.85;
+    var voices=synth.getVoices(),chosen=null;
+    for(var i=0;i<voices.length;i++){var v=voices[i];if(v.lang.indexOf('pt')!==-1){if(!chosen)chosen=v;var nm=v.name.toLowerCase();if(nm.indexOf('male')!==-1||nm.indexOf('daniel')!==-1||nm.indexOf('ricardo')!==-1){chosen=v;break;}}}
+    if(chosen)u.voice=chosen;
+    var vt=document.getElementById('voiceTrigger');
+    u.onstart=function(){vt.classList.remove('vibrate');vt.classList.add('speaking');};
+    u.onend=function(){vt.classList.remove('speaking');vt.classList.add('vibrate');if(onEnd)onEnd();};
+    u.onerror=function(){vt.classList.remove('speaking');vt.classList.add('vibrate');};
+    synth.speak(u);
+}
+
+function iniciarConversaVoz(){
+    if(window.speechSynthesis&&window.speechSynthesis.speaking){window.speechSynthesis.cancel();document.getElementById('voiceTrigger').classList.remove('speaking');document.getElementById('voiceDialog').classList.remove('show');return;}
+    var n=_recomendacoes.length;
+    var texto=getGreeting()+', Ezequiel! Temos '+numPorExtensoFem(n)+' de gestão para hoje. Gostaria de ouvir?';
+    document.getElementById('voiceDialogText').textContent=texto;
+    document.getElementById('voiceDialogBtns').innerHTML='<button onclick="respostaVoz(true)">Sim, quero ouvir</button><button class="btn-no" onclick="respostaVoz(false)">Agora não</button>';
+    document.getElementById('voiceDialog').classList.add('show');
+    falar(texto);
+}
+function respostaVoz(sim){
+    document.getElementById('voiceDialog').classList.remove('show');if(window.speechSynthesis)window.speechSynthesis.cancel();
+    if(sim){var t='';_recomendacoes.forEach(function(r,i){t+='Ação '+(i+1)+'. '+r.t+'. '+r.o+' '+r.p+' Resultados esperados: '+r.r+'. ';});t+='Essas são as recomendações para hoje. Bom trabalho, Ezequiel!';falar(t);abrirAcoes();}
+    else{falar('Tudo bem! Quando precisar, é só clicar.');}
+}
+if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=function(){};window.speechSynthesis.getVoices();}
+
+function sairDoModulo(){
+    if(window.speechSynthesis)window.speechSynthesis.cancel();
+    try{var p=window.parent;if(p&&p!==window&&p.document){p.document.querySelectorAll('.nav-group.open').forEach(function(g){g.classList.remove('open');});p.document.querySelectorAll('nav a, .nav-parent, .nav-subitem').forEach(function(a){a.classList.remove('active');});var fr=p.document.getElementById('content-frame');if(fr)fr.src='M2_Precifica\u00e7\u00e3o.html';var ti=p.document.getElementById('page-title');if(ti)ti.innerText='Importa\u00e7\u00e3o';var nl=p.document.querySelectorAll('nav a[onclick]');for(var i=0;i<nl.length;i++){var oc=nl[i].getAttribute('onclick')||'';if(oc.indexOf('Precifica')!==-1||oc.indexOf('Importa')!==-1){nl[i].classList.add('active');break;}}return;}}catch(e){}
+    window.location.href='M2_Precifica\u00e7\u00e3o.html';
+}
+if(window._fbReady)carregarDados();else window.addEventListener('fbReady',carregarDados);
+</script>
+</body>
+</html>
