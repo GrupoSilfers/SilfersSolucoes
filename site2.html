@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>SILFER'S – Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;color:#333;background:#1A1A1A;overflow-x:hidden}
+
+        .topbar{background:#EA1D25;padding:0 48px;height:28px;display:flex;align-items:center;justify-content:flex-end;gap:16px}
+        .topbar a{color:rgba(255,255,255,.85);font-size:10px;text-decoration:none;font-weight:500;letter-spacing:.03em}
+        .topbar a:hover{color:#fff}
+
+        .navbar{background:#fff;padding:0 48px;height:56px;display:flex;align-items:center;justify-content:space-between;
+                border-bottom:1px solid #eee;position:sticky;top:0;z-index:1000;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+        .nav-left{display:flex;align-items:center;gap:32px}
+        .nav-brand{display:flex;align-items:center;gap:10px}
+        .nav-logo{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #EA1D25}
+        .nav-logo-placeholder{width:32px;height:32px;border-radius:50%;background:#EA1D25;display:flex;align-items:center;
+                              justify-content:center;font-size:13px;font-weight:800;color:#fff}
+        .nav-name{font-size:15px;font-weight:700;color:#2D2D2D;letter-spacing:.04em}
+        .nav-name span{color:#EA1D25}
+        .nav-tabs{display:flex;gap:0}
+        .nav-tab{padding:0 16px;height:56px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#666;
+                 text-decoration:none;text-transform:uppercase;letter-spacing:.05em;border-bottom:3px solid transparent;transition:all .2s}
+        .nav-tab:hover{color:#EA1D25;border-bottom-color:#EA1D25}
+        .nav-tab.active{color:#EA1D25;border-bottom-color:#EA1D25}
+        .btn-acesso{background:#EA1D25;color:#fff;padding:8px 20px;font-size:11px;font-weight:700;border:none;cursor:pointer;
+                    text-transform:uppercase;letter-spacing:.06em;transition:all .3s;text-decoration:none;
+                    display:inline-flex;align-items:center;gap:6px}
+        .btn-acesso:hover{background:#CC0000;box-shadow:0 4px 15px rgba(234,29,37,.3)}
+
+        /* ── Carousel (FIXED: no gray strip) ── */
+        .carousel{position:relative;width:100%;height:440px;overflow:hidden;background:#1A1A1A}
+        .carousel-track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1);background:#1A1A1A}
+        .slide{flex:0 0 100%;height:100%;position:relative;display:flex;align-items:center;padding:0 80px;background:#1A1A1A;overflow:hidden}
+        .slide-bg{position:absolute;top:0;bottom:0;left:-4px;right:-4px;background-size:cover;background-position:center;z-index:0}
+        .slide-overlay{position:absolute;top:0;bottom:0;left:-4px;right:-4px;z-index:1}
+        .slide-1 .slide-overlay{background:linear-gradient(90deg,rgba(26,26,26,.92) 0%,rgba(26,26,26,.75) 45%,rgba(26,26,26,.3) 100%)}
+        .slide-2 .slide-overlay{background:linear-gradient(90deg,rgba(15,23,42,.92) 0%,rgba(15,23,42,.7) 45%,rgba(15,23,42,.2) 100%)}
+        .slide-3 .slide-overlay{background:linear-gradient(90deg,rgba(127,29,29,.92) 0%,rgba(234,29,37,.7) 45%,rgba(234,29,37,.2) 100%)}
+        .slide-4 .slide-overlay{background:linear-gradient(90deg,rgba(30,41,59,.92) 0%,rgba(30,41,59,.7) 45%,rgba(30,41,59,.2) 100%)}
+        .slide-content{position:relative;z-index:2;max-width:480px}
+        .slide-overline{font-size:10px;font-weight:700;color:#EA1D25;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px}
+        .slide-3 .slide-overline{color:#fecaca}
+        .slide h2{font-size:30px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:14px}
+        .slide p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:24px}
+        .btn-slide{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;font-size:11px;font-weight:700;
+                   color:#fff;background:#EA1D25;border:none;cursor:pointer;text-transform:uppercase;
+                   letter-spacing:.06em;transition:all .3s;text-decoration:none}
+        .btn-slide:hover{background:#CC0000;transform:translateY(-2px);box-shadow:0 6px 20px rgba(234,29,37,.4)}
+        .slide-3 .btn-slide{background:#fff;color:#EA1D25}
+        .slide-3 .btn-slide:hover{background:#fef2f2;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+        .carousel-dots{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+        .carousel-dot{width:10px;height:10px;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s;border:none}
+        .carousel-dot.active{background:#EA1D25;width:28px}
+        .carousel-arrows{position:absolute;top:50%;width:100%;display:flex;justify-content:space-between;padding:0 16px;
+                         transform:translateY(-50%);z-index:10;pointer-events:none}
+        .carousel-arrow{width:40px;height:40px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+                        color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;
+                        font-size:14px;pointer-events:all;backdrop-filter:blur(4px)}
+        .carousel-arrow:hover{background:rgba(255,255,255,.25)}
+
+        .dash-section{padding:48px 48px 40px;background:#F5F5F5}
+        .dash-frame-wrap{background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.08);overflow:hidden;border:1px solid #e5e5e5}
+        .dash-frame-header{display:flex;align-items:center;gap:8px;padding:12px 20px;background:#1A1A1A;color:#fff}
+        .dash-frame-header .dot{width:10px;height:10px;border-radius:50%}
+        .dash-frame-header .dot-r{background:#EA1D25} .dash-frame-header .dot-y{background:#eab308} .dash-frame-header .dot-g{background:#16a34a}
+        .dash-frame-header span{font-size:11px;font-weight:600;letter-spacing:.04em;margin-left:8px;color:#999}
+        .dash-frame{width:100%;height:520px;border:none;display:block}
+
+        .section{padding:48px 48px 40px;background:#fff}
+        .section-title{font-size:20px;font-weight:700;color:#2D2D2D;margin-bottom:6px}
+        .section-sub{font-size:12px;color:#999;margin-bottom:28px}
+
+        .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .quick-card{background:#fff;border:1px solid #eee;padding:24px 20px;cursor:pointer;transition:all .3s;
+                    position:relative;overflow:hidden;text-decoration:none;color:#333;display:flex;flex-direction:column;gap:10px}
+        .quick-card:hover{border-color:#EA1D25;box-shadow:0 8px 30px rgba(234,29,37,.08);transform:translateY(-4px)}
+        .quick-card::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:#EA1D25;transform:scaleX(0);transition:transform .3s}
+        .quick-card:hover::after{transform:scaleX(1)}
+        .quick-icon{width:44px;height:44px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:18px;color:#EA1D25;transition:all .3s}
+        .quick-card:hover .quick-icon{background:#EA1D25;color:#fff}
+        .quick-card h3{font-size:13px;font-weight:700;color:#2D2D2D}
+        .quick-card p{font-size:11px;color:#888;line-height:1.5}
+
+        .service-section{background:#F5F5F5;padding:40px 48px}
+        .service-grid{display:flex;gap:16px;flex-wrap:wrap}
+        .service-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 16px;background:#fff;
+                     border:1px solid #eee;cursor:pointer;transition:all .3s;text-decoration:none;color:#333;width:120px;text-align:center}
+        .service-btn:hover{border-color:#EA1D25;box-shadow:0 4px 15px rgba(234,29,37,.08)}
+        .service-btn i{font-size:22px;color:#EA1D25}
+        .service-btn span{font-size:10px;font-weight:600;color:#555;line-height:1.3}
+
+        .numbers{background:#2D2D2D;padding:24px 48px;margin:0 48px 48px;display:flex;align-items:center;justify-content:space-evenly}
+        .num-card{width:130px;height:130px;background:#383838;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+        .num-val{font-size:36px;font-weight:800;color:#EA1D25;font-family:'Courier New',monospace}
+        .num-label{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+
+        .footer{background:#1A1A1A;padding:32px 48px 20px;color:#888}
+        .footer-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:1px solid #333}
+        .footer-brand .f-name{font-size:16px;font-weight:700;color:#fff;letter-spacing:.04em}
+        .footer-brand .f-name span{color:#EA1D25}
+        .footer-brand p{font-size:10px;color:#666;margin-top:4px}
+        .footer-col h4{font-size:9px;font-weight:700;color:#EA1D25;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+        .footer-col a{font-size:10px;color:#777;text-decoration:none;display:block;line-height:2}
+        .footer-col a:hover{color:#EA1D25}
+        .footer-bottom{text-align:center;padding-top:16px;font-size:9px;color:#555}
+
+        .animate{opacity:0;transform:translateY(20px);transition:all .5s ease}
+        .animate.visible{opacity:1;transform:translateY(0)}
+    </style>
+</head>
+<body>
+
+    <div class="topbar"><a href="javascript:void(0)" onclick="acessarSistema()"><i class="fas fa-lock"></i> Área Restrita</a></div>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="nav-brand">
+                <div class="nav-logo-placeholder" id="navLogoP">S</div>
+                <img class="nav-logo" id="navLogo" style="display:none" alt="Logo">
+                <div class="nav-name">SILFER<span>'S</span></div>
+            </div>
+            <div class="nav-tabs">
+                <a class="nav-tab active" href="#inicio">Início</a>
+                <a class="nav-tab" href="#dashboard">Dashboard</a>
+                <a class="nav-tab" href="#modulos">Módulos</a>
+                <a class="nav-tab" href="#numeros">Resultados</a>
+            </div>
+        </div>
+        <a class="btn-acesso" href="javascript:void(0)" onclick="acessarSistema()"><i class="fas fa-th-large"></i> Acessar SIGA</a>
+    </nav>
+
+    <div class="carousel" id="inicio">
+        <div class="carousel-track" id="carouselTrack">
+            <div class="slide slide-1">
+                <div class="slide-bg" style="background-image:url('slide1.jpg')"></div>
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-overline">Painel de Controle</div>
+                    <h2>Seu negócio na palma da mão</h2>
+                    <p>Dashboard completo com indicadores financeiros, vendas, estoque e desempenho — tudo em tempo real.</p>
+                    <a class="btn-slide" href="#dashboard"><i class="fas fa-chart-line"></i> Ver Dashboard</a>
+                </div>
+            </div>
+            <div class="slide slide-2">
+                <div class="slide-bg" style="background-image:url('https://images.unsplash.com/photo-1553413077-190dd305871c?w=1400&q=80')"></div>
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-overline">Portfólio & Estoque</div>
+                    <h2>Conheça cada produto que você vende</h2>
+                    <p>Curva ABC, estoque real, margem por produto e histórico — tudo integrado.</p>
+                    <a class="btn-slide" href="javascript:void(0)" onclick="acessarModulo('M6_Portfolio.html')"><i class="fas fa-boxes"></i> Ver Portfólio</a>
+                </div>
+            </div>
+            <div class="slide slide-3">
+                <div class="slide-bg" style="background-image:url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=80')"></div>
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-overline">Pedido de Venda</div>
+                    <h2>Monte pedidos com inteligência</h2>
+                    <p>Importação de NF, precificação automática, cálculo de margem e geração de PDF.</p>
+                    <a class="btn-slide" href="javascript:void(0)" onclick="acessarModulo('M3_Pedido.html')"><i class="fas fa-file-invoice-dollar"></i> Novo Pedido</a>
+                </div>
+            </div>
+            <div class="slide slide-4">
+                <div class="slide-bg" style="background-image:url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1400&q=80')"></div>
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-overline">Gestão Financeira</div>
+                    <h2>Saiba exatamente quanto tem a receber</h2>
+                    <p>Aging, inadimplência, rentabilidade por cliente e classificação ABC.</p>
+                    <a class="btn-slide" href="javascript:void(0)" onclick="acessarModulo('M7_ContasReceber.html')"><i class="fas fa-hand-holding-usd"></i> Ver Financeiro</a>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-arrows">
+            <button class="carousel-arrow" onclick="moveSlide(-1)"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-arrow" onclick="moveSlide(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="carousel-dots">
+            <button class="carousel-dot active" onclick="goToSlide(0)"></button>
+            <button class="carousel-dot" onclick="goToSlide(1)"></button>
+            <button class="carousel-dot" onclick="goToSlide(2)"></button>
+            <button class="carousel-dot" onclick="goToSlide(3)"></button>
+        </div>
+    </div>
+
+    <div class="dash-section" id="dashboard">
+        <div class="section-title">Painel de Controle</div>
+        <div class="section-sub">Dashboard em tempo real — os mesmos gráficos do sistema, direto no portal</div>
+        <div class="dash-frame-wrap">
+            <div class="dash-frame-header">
+                <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+                <span>SIGA Dashboard — M00_Dashboard.html</span>
+            </div>
+            <iframe class="dash-frame" src="M00_Dashboard.html" loading="lazy"></iframe>
+        </div>
+    </div>
+
+    <div class="section" id="modulos">
+        <div class="section-title">Dá uma olhadinha em tudo que temos</div>
+        <div class="section-sub">Acesse diretamente o módulo que precisa</div>
+        <div class="quick-grid">
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M00_Dashboard.html')"><div class="quick-icon"><i class="fas fa-chart-line"></i></div><h3>Dashboard</h3><p>Visão geral com KPIs e gráficos em tempo real</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M6_Portfolio.html')"><div class="quick-icon"><i class="fas fa-briefcase"></i></div><h3>Portfólio de Produtos</h3><p>Mix, Curva ABC, estoque real e margem</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M3_Pedido.html')"><div class="quick-icon"><i class="fas fa-file-invoice-dollar"></i></div><h3>Pedido de Venda</h3><p>Importação de NF e precificação inteligente</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M7_ContasReceber.html')"><div class="quick-icon"><i class="fas fa-hand-holding-usd"></i></div><h3>Contas a Receber</h3><p>Aging, inadimplência e análise por cliente</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M2_Precificação.html')"><div class="quick-icon"><i class="fas fa-file-import"></i></div><h3>Importação de NF</h3><p>Alimente o banco de dados automaticamente</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M1_Tabela.html')"><div class="quick-icon"><i class="fas fa-database"></i></div><h3>Banco de Dados</h3><p>Produtos, preços, custos e margens</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M4_Cadastro.html')"><div class="quick-icon"><i class="fas fa-users"></i></div><h3>Cadastros</h3><p>Clientes e produtos integrados</p></a>
+            <a class="quick-card animate" href="javascript:void(0)" onclick="acessarModulo('M5_Configuracoes.html')"><div class="quick-icon"><i class="fas fa-cog"></i></div><h3>Configurações</h3><p>Logo, dados da empresa e preferências</p></a>
+        </div>
+    </div>
+
+    <div class="service-section">
+        <div class="section-title" style="margin-bottom:20px">Facilite seu dia a dia</div>
+        <div class="service-grid">
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M3_Pedido.html')"><i class="fas fa-plus-circle"></i><span>Novo<br>Pedido</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M3_Pedido.html')"><i class="fas fa-search"></i><span>Consultar<br>Pedido</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M1_Tabela.html')"><i class="fas fa-database"></i><span>Banco de<br>Dados</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M6_Portfolio.html')"><i class="fas fa-boxes"></i><span>Portfólio</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M7_ContasReceber.html')"><i class="fas fa-hand-holding-usd"></i><span>Contas a<br>Receber</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M2_Precificação.html')"><i class="fas fa-file-import"></i><span>Importar<br>NF</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M5_Configuracoes.html')"><i class="fas fa-cog"></i><span>Config.</span></a>
+            <a class="service-btn" href="javascript:void(0)" onclick="acessarModulo('M00_Dashboard.html')"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+        </div>
+    </div>
+
+    <div class="section" id="numeros" style="background:#fff">
+        <div class="section-title">Resultados que falam</div>
+        <div class="section-sub">Dados reais do sistema, atualizados em tempo real</div>
+        <div class="numbers">
+            <div class="num-card"><div class="num-val" id="n-prod">–</div><div class="num-label">Produtos</div></div>
+            <div class="num-card"><div class="num-val" id="n-ped">–</div><div class="num-label">Pedidos</div></div>
+            <div class="num-card"><div class="num-val" id="n-cli">–</div><div class="num-label">Clientes</div></div>
+            <div class="num-card"><div class="num-val" id="n-fat">–</div><div class="num-label">Faturamento</div></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="footer-brand"><div class="f-name">SILFER<span>'S</span></div><p>Soluções Empresariais · Distribuição & Fracionamento</p></div>
+            <div class="footer-col"><h4>Sistema SIGA</h4><a href="javascript:void(0)" onclick="acessarSistema()">Acessar SIGA</a><a href="javascript:void(0)" onclick="acessarModulo('M6_Portfolio.html')">Portfólio</a><a href="javascript:void(0)" onclick="acessarModulo('M3_Pedido.html')">Pedido de Venda</a><a href="javascript:void(0)" onclick="acessarModulo('M7_ContasReceber.html')">Financeiro</a></div>
+            <div class="footer-col"><h4>Contato</h4><a href="javascript:void(0)"><i class="fas fa-map-marker-alt" style="color:#EA1D25;margin-right:4px"></i> Brasília – DF</a><a href="javascript:void(0)"><i class="fas fa-envelope" style="color:#EA1D25;margin-right:4px"></i> contato@silfers.com.br</a></div>
+        </div>
+        <div class="footer-bottom">© 2025 Silfer's Soluções Empresariais. Todos os direitos reservados. Powered by <strong style="color:#EA1D25">SIGA</strong></div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        const cfg={apiKey:"AIzaSyA-2xsChiPLxDEBe6zrvp4vXeVOTKA31sk",authDomain:"silferssolucoes.firebaseapp.com",projectId:"silferssolucoes",storageBucket:"silferssolucoes.firebasestorage.app",messagingSenderId:"923480581130",appId:"1:923480581130:web:9c3e4d8ccab43354c16bf3"};
+        const app=initializeApp(cfg),db=getFirestore(app);
+        try{const s=await getDoc(doc(db,'configuracoes','logo'));if(s.exists()){const b=s.data().base64||s.data().url;if(b){const i=document.getElementById('navLogo');i.src=b;i.style.display='block';document.getElementById('navLogoP').style.display='none'}}}catch(e){}
+        try{const ps=await getDocs(collection(db,'produtos'));const cods=new Set();ps.forEach(d=>{const c=(d.data().cod||'').toString().trim();if(c)cods.add(c)});
+        const pe=await getDocs(collection(db,'pedidos'));let np=0,ft=0;const cs=new Set();pe.forEach(d=>{np++;const dd=d.data(),t=dd.totais||{};ft+=parseFloat(t.vlTotal)||parseFloat(t.totalMerc)||0;const cn=(dd.cliente||{}).nome||'';if(cn)cs.add(cn)});
+        window._nP=cods.size;window._nPe=np;window._nC=cs.size;window._nF=ft;window.dispatchEvent(new Event('kpis-ready'))}catch(e){}
+    </script>
+
+    <script>
+        let cur=0;const tot=4;let autoT;
+        function goToSlide(n){cur=n;document.getElementById('carouselTrack').style.transform='translateX(-'+(n*100)+'%)';document.querySelectorAll('.carousel-dot').forEach((d,i)=>d.classList.toggle('active',i===n));resetAuto()}
+        function moveSlide(d){goToSlide((cur+d+tot)%tot)}
+        function resetAuto(){clearInterval(autoT);autoT=setInterval(()=>moveSlide(1),5000)}
+        resetAuto();
+
+        const obs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting)en.target.classList.add('visible')})},{threshold:.1});
+        document.querySelectorAll('.animate').forEach(el=>obs.observe(el));
+
+        function animC(el,tgt,sfx){const d=1500,st=40,inc=tgt/st;let c=0;const t=setInterval(()=>{c+=inc;if(c>=tgt){c=tgt;clearInterval(t)}el.textContent=Math.floor(c).toLocaleString('pt-BR')+(sfx||'')},d/st)}
+        window.addEventListener('kpis-ready',()=>{
+            animC(document.getElementById('n-prod'),window._nP||0);
+            animC(document.getElementById('n-ped'),window._nPe||0);
+            animC(document.getElementById('n-cli'),window._nC||0);
+            const f=window._nF||0;animC(document.getElementById('n-fat'),f>=1000?Math.round(f/1000):f,f>=1000?'K':'');
+        });
+
+        function acessarSistema(){try{var p=window.parent;if(p&&p!==window&&p.document){var f=p.document.getElementById('content-frame');if(f){f.src='M00_Dashboard.html';return}}}catch(e){}window.location.href='M0_Menu.html'}
+        function acessarModulo(mod){try{var p=window.parent;if(p&&p!==window&&p.document){var f=p.document.getElementById('content-frame');if(f){f.src=mod;return}}}catch(e){}window.location.href=mod}
+        window.addEventListener('scroll',()=>{const tabs=document.querySelectorAll('.nav-tab');const secs=['inicio','dashboard','modulos','numeros'];let act='inicio';secs.forEach(id=>{const el=document.getElementById(id);if(el&&window.scrollY>=el.offsetTop-100)act=id});tabs.forEach(t=>t.classList.toggle('active',t.getAttribute('href')==='#'+act))});
+    </script>
+</body>
+</html>
