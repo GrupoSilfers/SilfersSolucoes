@@ -564,7 +564,7 @@
 
         document.getElementById('detalheDesc').innerHTML =
             '<input id="ed_desc" value="'+((p.desc||'')).replace(/"/g,'&quot;')+'" style="border:none;border-bottom:1.5px solid rgba(148,163,184,.4);background:transparent;color:#f8fafc;font-family:Courier New,monospace;font-size:12px;width:100%;padding:2px 0;outline:none;text-transform:uppercase;" />';
-        document.getElementById('detalheCod').textContent = 'C\u00f3digo: ' + (p.cod || '\u2014') + '  |  UN: ' + (p.un || '\u2014');
+        document.getElementById('detalheCod').textContent = 'C\u00f3digo: ' + (p.cod || '\u2014') + '  |  UN: ' + (p.un || '\u2014') + '  |  NCM: ' + (p.ncm || '\u2014');
 
         var mg = p.mgLucro != null ? p.mgLucro : 0;
         var mgClass = mg >= 0.3 ? 'pos' : (mg >= 0.1 ? '' : 'neg');
