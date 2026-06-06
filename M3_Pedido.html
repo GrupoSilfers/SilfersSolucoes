@@ -1263,9 +1263,9 @@ function getDatePrefix() {
                 const pedidos = [];
                 snap.forEach(d=>{
                     const data=d.data(), t=data.totais||{}, it=data.itens||[];
-                    const venda=parseFloat(t.vlTotal)||parseFloat(t.totalMerc)||0;
+                    const venda=parseFloat(t.totalMerc)||parseFloat(t.vlTotal)||0;
                     const custo=it.reduce((s,x)=>s+(parseFloat(x.custoTotal)||0),0);
-                    const lucroBruto=r2(venda-custo), desc5=r2(lucroBruto*0.05);
+                    const lucroBruto=r2(venda-custo), desc5=r2(venda*0.05);
                     const lucroLiq=parseFloat(t.lucroLiquido)||r2(lucroBruto-desc5);
                     const margem=venda>0?r2((lucroLiq/venda)*100):0;
                     const rod=data.rodape||{};
