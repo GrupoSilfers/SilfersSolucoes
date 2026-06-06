@@ -343,32 +343,6 @@
     }
     .nf-registrada:hover { color: #1b5e20; }
 
-    .btn-registrar-nf {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 18px;
-      font-size: 0.92em;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #3949ab 60%, #1a237e 100%);
-      color: #fff;
-      cursor: pointer;
-      opacity: 0.45;
-      pointer-events: none;
-      transition: background 0.18s, box-shadow 0.18s, opacity 0.18s;
-      box-shadow: 0 1px 4px rgba(57,73,171,0.10);
-    }
-    .btn-registrar-nf.ativo {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .btn-registrar-nf.ativo:hover {
-      background: linear-gradient(135deg, #1a237e 60%, #3949ab 100%);
-      box-shadow: 0 2px 12px rgba(57,73,171,0.22);
-    }
-
   </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -582,7 +556,7 @@
                 <div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px 0;">
                         <div class="cns-divider" style="margin:0;flex:1;">Ou selecione na lista abaixo</div>
                         <button class="btn-excluir-pedidos" id="btnExcluirPedidos" onclick="excluirPedidosSelecionados()">🗑 Excluir Selecionados</button>
-            <button id="btnRegistrarNF" class="btn-registrar-nf" onclick="registrarNFEmLote()">
+            <button id="btnRegistrarNF" class="btn-excluir-pedidos" onclick="registrarNFEmLote()">
               <span style="font-size:1.15em;">🧾</span> Registrar NF
             </button>
                     </div>
@@ -1438,8 +1412,8 @@ function getDatePrefix() {
             else btn.classList.remove('active');
             const btnNF = document.getElementById('btnRegistrarNF');
             if (btnNF) {
-                if (checked.length > 0) btnNF.classList.add('ativo');
-                else btnNF.classList.remove('ativo');
+                if (checked.length > 0) btnNF.classList.add('active');
+                else btnNF.classList.remove('active');
             }
         }
 
