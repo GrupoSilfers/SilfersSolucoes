@@ -351,7 +351,7 @@
       pointer-events: none; opacity: 0.7; background: #f1f5f9 !important;
       border-color: transparent !important;
     }
-    body.pedido-congelado .bar-adicionar { display: none !important; }
+    body.pedido-congelado .bar-edit-controls { visibility: hidden; }
     body.pedido-congelado .btn-del { display: none !important; }
     body.pedido-congelado .save-fab { pointer-events: none; opacity: 0.15 !important; }
     body.pedido-congelado .footer-input {
@@ -456,6 +456,7 @@
         <!-- TABELA DE PRODUTOS -->
         <div class="section" style="padding:0;display:flex;flex-direction:column;gap:6px;border:none;box-shadow:none;background:transparent;">
             <div class="no-print bar-adicionar" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:#fefce8;border-bottom:1px solid #e2e8f0;flex-wrap:nowrap;">
+                    <span class="bar-edit-controls" style="display:contents;">
                     <span class="label" style="white-space:nowrap;">Adicionar item:</span>
                     <input id="addCod" type="text" class="input-sm" style="width:90px;height:28px;background:white;" placeholder="Cód" onkeydown="if(event.key==='Enter'){document.getElementById('addQtd').focus();}">
                     <input id="addQtd" type="number" min="1" value="1" class="input-sm" style="width:60px;height:28px;background:white;text-align:center;" placeholder="Qtd" onkeydown="if(event.key==='Enter') adicionarItem();">
@@ -466,7 +467,7 @@
                     <span class="label" style="white-space:nowrap;">Importar NF:</span>
                     <input id="addDocEntrada" type="text" class="input-sm" style="width:120px;height:28px;background:white;" placeholder="Nº Doc Entrada" onkeydown="if(event.key==='Enter') importarPorDocEntrada();">
                     <button class="btn-ghost" onclick="importarPorDocEntrada()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar NF</button>
-                    <span id="addDocMsg" style="font-size:10px;color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                    <span id="addDocMsg" style="font-size:10px;color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></span>
             </div>
             <div class="no-print" style="display:flex;justify-content:flex-end;padding:2px 20px 6px 20px;">
                     <button class="btn-ghost" onclick="toggleCusto()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Análise de Custo</button>
