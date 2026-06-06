@@ -556,9 +556,7 @@
                 <div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px 0;">
                         <div class="cns-divider" style="margin:0;flex:1;">Ou selecione na lista abaixo</div>
                         <button class="btn-excluir-pedidos" id="btnExcluirPedidos" onclick="excluirPedidosSelecionados()">🗑 Excluir Selecionados</button>
-            <button id="btnRegistrarNF" class="btn-excluir-pedidos" onclick="registrarNFEmLote()">
-              <span style="font-size:1.15em;">🧾</span> Registrar NF
-            </button>
+            <button class="btn-excluir-pedidos" id="btnRegistrarNF" onclick="registrarNFEmLote()">🧾 Registrar NF</button>
                     </div>
                 <div id="cnsLoading" class="cns-loading" style="display:none;">
                     <span class="spinner"></span> Carregando pedidos...
@@ -1317,7 +1315,7 @@ function getDatePrefix() {
                         +'<td class="center">'+p.venc+'</td>'
                         +'<td class="center" onclick="event.stopPropagation()">'
                         +(p.nfNumero
-                          ? '<span class="nf-registrada" onclick="registrarNFIndividual(\''+p.id+'\',\''+p.nfNumero+'\')">' + p.nfNumero + '</span>'
+                          ? '<span class="nf-registrada" onclick="registrarNFIndividual(\''+p.id+'\',\''+p.nfNumero+'\')">'+p.nfNumero+'</span>'
                           : '<span class="nf-pendente" onclick="registrarNFIndividual(\''+p.id+'\',\'\')">Pendente</span>')
                         +'</td>'
                         +'<td class="center" onclick="event.stopPropagation()">'
@@ -1360,7 +1358,7 @@ function getDatePrefix() {
             }
             try {
                 await window._setDoc(window._doc(window._db, 'pedidos', pedidoId), { nfNumero: nfLimpo }, { merge: true });
-                showToast(nfLimpo ? '✔ NF ' + nfLimpo + ' registrada no pedido ' + pedidoId : '✔ NF removida do pedido ' + pedidoId, 'success');
+                showToast(nfLimpo ? 'NF ' + nfLimpo + ' registrada no pedido ' + pedidoId : 'NF removida do pedido ' + pedidoId, 'success');
                 carregarListaPedidos();
             } catch(e) {
                 showToast('Erro ao registrar NF: ' + e.message, 'error');
@@ -1382,8 +1380,8 @@ function getDatePrefix() {
                     ok++;
                 } catch(e) { console.error(e); erros++; }
             }
-            if (ok > 0) showToast('✔ NF ' + nfLimpo + ' registrada em ' + ok + ' pedido(s)!', 'success');
-            if (erros > 0) showToast('⚠ ' + erros + ' erro(s) ao registrar NF.', 'error');
+            if (ok > 0) showToast('NF ' + nfLimpo + ' registrada em ' + ok + ' pedido(s)!', 'success');
+            if (erros > 0) showToast(erros + ' erro(s) ao registrar NF.', 'error');
             carregarListaPedidos();
         }
 
